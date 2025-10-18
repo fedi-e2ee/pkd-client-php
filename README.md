@@ -1,5 +1,8 @@
 # Fediverse Public Key Directory PHP Client
 
+[![CI](https://github.com/fedi-e2ee/pkd-client-php/actions/workflows/ci.yml/badge.svg)](https://github.com/fedi-e2ee/pkd-client-php/actions/workflows/ci.yml)
+[![Psalm](https://github.com/fedi-e2ee/pkd-client-php/actions/workflows/psalm.yml/badge.svg)](https://github.com/fedi-e2ee/pkd-client-php/actions/workflows/psalm.yml)
+
 This is an implementation of the client-side component of the 
 [Public Key Directory specification](https://github.com/fedi-e2ee/public-key-directory-specification), written in PHP.
 See [`fedi-e2ee/pkd-server-go`](https://github.com/fedi-e2ee/pkd-server-go) for the reference implementation of the 

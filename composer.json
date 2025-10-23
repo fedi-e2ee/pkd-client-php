@@ -19,10 +19,9 @@
   },
   "require": {
     "ext-curl": "*",
-    "php": ">= 7.4",
+    "php": "^8.2",
     "fedi-e2ee/pkd-crypto": "^0|^1",
     "guzzlehttp/guzzle": "^7",
-    "paragonie/hpke": "^0|^1",
     "paragonie/sodium_compat": "^1|^2"
   },
   "require-dev": {

@@ -7,5 +7,6 @@ namespace FediE2EE\PKD\Features;
  */
 trait PublishTrait
 {
+    use APTrait;
 
 }

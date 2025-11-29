@@ -2,7 +2,9 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\Exceptions;
 
-class NotImplementedException extends ClientException
+use Exception;
+
+class ClientException extends Exception
 {
 
 }

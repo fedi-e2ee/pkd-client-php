@@ -23,7 +23,7 @@ jobs:
       - name: Install Composer dependencies
         uses: "ramsey/composer-install@v3"
         with:
-          composer-options: --no-dev
+          composer-options: --dev
 
       - name: Static Analysis
         run: vendor/bin/psalm

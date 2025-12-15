@@ -29,6 +29,7 @@ $client = new Client('https://pkd.example.com', $directoryPublicKey);
 $publicKeys = $client->fetchPublicKeys('soatok@furry.engineer');
 var_dump($publicKeys); // array<PublicKey>
 
-$auxData = $client->fetchAuxData('soatok@furry.engineer', 'age-v1');
+// 'age' is an alias for the latest version; i.e., 'age-v1'.
+$auxData = $client->fetchAuxData('soatok@furry.engineer', 'age');
 var_dump($auxData); // array<AuxData>
 ```

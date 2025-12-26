@@ -18,12 +18,12 @@ composer require fedi-e2ee/pkd-client
 
 ```php
 <?php
-use FediE2EE\PKD\Client;
+use FediE2EE\PKD\ReadOnlyClient;
 use FediE2EE\PKD\Crypto\PublicKey;
 
 // Setup client
 $directoryPublicKey = new PublicKey('public key goes here', 'ed25519');
-$client = new Client('https://pkd.example.com', $directoryPublicKey);
+$client = new ReadonlyClient('https://pkd.example.com', $directoryPublicKey);
 
 // Grab public keys for ActivityPub actor
 $publicKeys = $client->fetchPublicKeys('soatok@furry.engineer');

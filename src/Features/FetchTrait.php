@@ -39,6 +39,7 @@ trait FetchTrait
         if ($response->getStatusCode() !== 200) {
             throw new ClientException('Could not retrieve public keys.');
         }
+        $this->verifyHttpSignature($response);
         $body = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/actor/get-keys');
         $this->assertKeysExist($body, ['actor-id', 'public-keys']);
         $publicKeys = [];
@@ -146,6 +147,7 @@ trait FetchTrait
         if ($auxDataResponse->getStatusCode() !== 200) {
             return null;
         }
+        $this->verifyHttpSignature($auxDataResponse);
         try {
             /** @var array{aux-type: string, aux-data: string, aux-id: string, actor-id: string} $body */
             $body = $this->parseJsonResponse($auxDataResponse, 'fedi-e2ee:v1/api/actor/get-aux');
@@ -163,5 +165,14 @@ trait FetchTrait
             id: $body['aux-id'],
             actor: $body['actor-id'],
         );
+    }
+
+    public function fetchRecentMerkleRoot(): string
+    {
+        $this->ensureHttpClientConfigured();
+        $response = $this->httpClient->get($this->url . '/api/history');
+        $this->verifyHttpSignature($response);
+        $body = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/history');
+        return $body['merkle-root'];
     }
 }

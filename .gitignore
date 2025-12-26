@@ -1,4 +1,6 @@
 /.idea
+/.data
+!/.data/.gitkeep
 /composer.lock
 /composer.phar
 /vendor

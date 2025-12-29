@@ -32,8 +32,17 @@ trait APTrait
         return $finger->canonicalize($actorName);
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function getInboxUrl(string $actorName): string
     {
+        if (is_null($this->httpClient)) {
+            throw new ClientException('The http client is not injected');
+        }
         // Canonicalize Actor ID just in case.
         $canonical = $this->canonicalize($actorName);
         $response = $this->httpClient->get($canonical, [

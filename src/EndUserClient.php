@@ -2,12 +2,16 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD;
 
-use FediE2EE\PKD\Crypto\PublicKey;
-use FediE2EE\PKD\Crypto\SecretKey;
+use FediE2EE\PKD\Crypto\{
+    PublicKey,
+    SecretKey,
+};
 use FediE2EE\PKD\Exceptions\ClientException;
 use FediE2EE\PKD\Extensions\Registry;
-use FediE2EE\PKD\Features\FetchTrait;
-use FediE2EE\PKD\Features\ProtocolTrait;
+use FediE2EE\PKD\Features\{
+    FetchTrait,
+    ProtocolTrait
+};
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
 
@@ -33,7 +37,9 @@ final class EndUserClient extends AbstractClient
     ) {
         $this->url = $url;
         $this->pk = $pk;
-        $this->sk = $sk;
+        if (!is_null($sk)) {
+            $this->sk = $sk;
+        }
         if (is_null($registry)) {
             $registry = new Registry();
         }

@@ -49,8 +49,15 @@ trait PublishTrait
     protected ?string $serverActorInbox = null;
     protected ?ServerHPKE $serverHPKE = null;
 
+    /**
+     * @throws ClientException
+     * @throws JsonException
+     */
     public function encryptBundle(Bundle $bundle): string
     {
+        if (is_null($this->serverHPKE)) {
+            throw new ClientException('HPKE config is not defined');
+        }
         $adapter = new HPKEAdapter($this->serverHPKE->ciphersuite);
         return $adapter->seal($this->serverHPKE->encapsKey, $bundle->toJson());
     }
@@ -84,6 +91,12 @@ trait PublishTrait
         SecretKey $httpSignatureSecretKey,
         #[\SensitiveParameter] string $body
     ): ResponseInterface {
+        if (is_null($this->httpClient)) {
+            throw new ClientException('The http client is not injected');
+        }
+        if (is_null($this->serverActorInbox)) {
+            throw new ClientException('The actor inbox URL is not set');
+        }
         $request = new Request(
             'POST',
             $this->serverActorInbox,
@@ -123,6 +136,9 @@ trait PublishTrait
      */
     protected function fetchServerInfo(): void
     {
+        if (is_null($this->httpClient)) {
+            throw new ClientException('The http client is not injected');
+        }
         // ActivityPub Actor for PKD Server:
         if (is_null($this->serverActorInbox)) {
             $response = $this->httpClient->get($this->url . '/api/info');

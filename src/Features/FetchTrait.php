@@ -7,10 +7,13 @@ use FediE2EE\PKD\Exceptions\ClientException;
 use FediE2EE\PKD\Extensions\ExtensionException;
 use FediE2EE\PKD\Values\AuxData;
 use FediE2EE\PKD\Crypto\Exceptions\{
+    HttpSignatureException,
     JsonException,
     NetworkException,
+    NotImplementedException
 };
 use GuzzleHttp\Exception\GuzzleException;
+use SodiumException;
 use Throwable;
 
 /**
@@ -22,9 +25,12 @@ trait FetchTrait
 
     /**
      * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
      * @throws JsonException
      * @throws NetworkException
-     * @throws GuzzleException
+     * @throws NotImplementedException
+     * @throws SodiumException
      */
     public function fetchPublicKeys(string $actor): array
     {
@@ -167,9 +173,19 @@ trait FetchTrait
         );
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function fetchRecentMerkleRoot(): string
     {
         $this->ensureHttpClientConfigured();
+        if (is_null($this->httpClient)) {
+            throw new ClientException('The http client is not injected');
+        }
         $response = $this->httpClient->get($this->url . '/api/history');
         $this->verifyHttpSignature($response);
         $body = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/history');

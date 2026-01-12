@@ -4,9 +4,11 @@ namespace FediE2EE\PKD\Tests\Features;
 
 use FediE2EE\PKD\Features\APTrait;
 use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 #[CoversNothing]
+#[Group('unit')]
 class APTraitTest extends TestCase
 {
     use APTrait;

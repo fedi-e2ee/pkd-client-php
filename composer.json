@@ -14,7 +14,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "FediE2EE\\PKD\\Tests\\": "tests"
+      "FediE2EE\\PKD\\IntegrationTests\\": "tests/integration",
+      "FediE2EE\\PKD\\Tests\\": "tests/unit"
     }
   },
   "require": {
@@ -26,6 +27,7 @@
     "paragonie/sodium_compat": "^1|^2"
   },
   "require-dev": {
+    "paragonie/easydb": "^3",
     "phpunit/phpunit": "^8|^9|^10|^11|^12",
     "soatok/mini-fedi-server": "^0",
     "vimeo/psalm": "^6"

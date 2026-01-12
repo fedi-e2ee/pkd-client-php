@@ -5,9 +5,11 @@ namespace FediE2EE\PKD\Tests;
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\ReadOnlyClient;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ReadOnlyClient::class)]
+#[Group('unit')]
 class ReadOnlyClientTest extends TestCase
 {
     public function testConstructor(): void

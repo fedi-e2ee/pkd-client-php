@@ -1,6 +1,7 @@
 /.idea
 /.data
 !/.data/.gitkeep
+/.phpunit.cache
 /composer.lock
 /composer.phar
 /vendor

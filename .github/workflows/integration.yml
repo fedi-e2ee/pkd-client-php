@@ -1,0 +1,123 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    name: Integration Tests with PHP ${{ matrix.php-versions }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-versions: ['8.4', '8.5']
+
+    steps:
+      - name: Checkout pkd-client-php
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+          path: pkd-client-php
+
+      - name: Checkout mini-fedi-server
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+          repository: soatok/mini-fedi-server
+          path: mini-fedi-server
+
+      - name: Checkout pkd-server-php
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+          repository: fedi-e2ee/pkd-server-php
+          path: pkd-server-php
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@9e72090525849c5e82e596468b86eb55e9cc5401  # v2.32.0
+        with:
+          php-version: ${{ matrix.php-versions }}
+          extensions: mbstring, intl, sodium, pdo_sqlite
+          ini-values: error_reporting=-1, display_errors=On
+          coverage: none
+
+      - name: Install pkd-client-php dependencies
+        uses: ramsey/composer-install@57532f8be5bda426838819c5ee9afb8af389d51a  # v3.0.0
+        with:
+          working-directory: pkd-client-php
+
+      - name: Install mini-fedi-server dependencies
+        uses: ramsey/composer-install@57532f8be5bda426838819c5ee9afb8af389d51a  # v3.0.0
+        with:
+          working-directory: mini-fedi-server
+
+      - name: Install pkd-server-php dependencies
+        uses: ramsey/composer-install@57532f8be5bda426838819c5ee9afb8af389d51a  # v3.0.0
+        with:
+          working-directory: pkd-server-php
+
+      - name: Initialize mini-fedi-server database
+        run: |
+          cd mini-fedi-server
+          sqlite3 config/database.sqlite < sql/sqlite/mini-fedi.sql
+          echo '{"debug":true,"domain":"mini-fedi.localhost","hostname":"127.0.0.1:65233"}' > config/vars.json
+
+      - name: Initialize pkd-server-php database
+        run: |
+          cd pkd-server-php
+          mkdir -p config/local
+          cat > config/local/database.php << 'EOF'
+          <?php
+          declare(strict_types=1);
+          namespace FediE2EE\PKDServer\Config;
+
+          use ParagonIE\EasyDB\EasyDBCache;
+          use PDO;
+
+          return new EasyDBCache(new PDO('sqlite:' . __DIR__ . '/integration-test.db'));
+          EOF
+          php cmd/init-database.php
+
+      - name: Start mini-fedi-server
+        run: |
+          cd mini-fedi-server
+          php -S 127.0.0.1:65233 -t public public/index.php > /tmp/mini-fedi.log 2>&1 &
+          echo $! > /tmp/mini-fedi.pid
+          sleep 2
+          curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:65233/.well-known/webfinger?resource=acct:test@127.0.0.1:65233 || true
+
+      - name: Start pkd-server-php
+        run: |
+          cd pkd-server-php
+          php -S 127.0.0.1:65234 -t public public/index.php > /tmp/pkd-server.log 2>&1 &
+          echo $! > /tmp/pkd-server.pid
+          sleep 2
+          curl -s http://127.0.0.1:65234/api/server-public-key | head -c 100
+
+      - name: Run integration tests
+        run: |
+          cd pkd-client-php
+          vendor/bin/phpunit --testsuite integration --group integration,live-servers
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          echo "=== mini-fedi-server logs ==="
+          cat /tmp/mini-fedi.log || echo "No logs"
+          echo ""
+          echo "=== pkd-server-php logs ==="
+          cat /tmp/pkd-server.log || echo "No logs"
+
+      - name: Stop servers
+        if: always()
+        run: |
+          if [ -f /tmp/mini-fedi.pid ]; then
+            kill $(cat /tmp/mini-fedi.pid) 2>/dev/null || true
+          fi
+          if [ -f /tmp/pkd-server.pid ]; then
+            kill $(cat /tmp/pkd-server.pid) 2>/dev/null || true
+          fi

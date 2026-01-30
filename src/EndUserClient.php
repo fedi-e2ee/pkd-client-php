@@ -80,7 +80,7 @@ final class EndUserClient extends AbstractClient
     public function addAuxData(string $data, string $type, ?string $actor = null): string
     {
         return $this->encryptBundle(
-            $this->createAddAuxData($data, $type, $this->flattenActor($actor))
+            $this->createAddAuxData($this->flattenActor($actor), $type, $data)
         );
     }
 
@@ -131,7 +131,7 @@ final class EndUserClient extends AbstractClient
     public function moveIdentity(string $newActor, ?string $oldActor = null): string
     {
         return $this->encryptBundle(
-            $this->createMoveIdentity($newActor, $this->flattenActor($oldActor))
+            $this->createMoveIdentity($this->flattenActor($oldActor), $newActor)
         );
     }
 

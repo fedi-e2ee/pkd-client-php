@@ -16,6 +16,7 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use SensitiveParameter;
 use SodiumException;
+use function is_null;
 
 /**
  * This class should be used by Fediverse instance software.

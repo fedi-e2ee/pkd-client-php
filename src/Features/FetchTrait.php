@@ -15,6 +15,7 @@ use FediE2EE\PKD\Crypto\Exceptions\{
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
 use Throwable;
+use function is_null, urlencode;
 
 /**
  *  Methods that clients will use for pulling messages from the Public key Directory

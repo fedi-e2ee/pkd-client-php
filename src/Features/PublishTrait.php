@@ -36,6 +36,7 @@ use Psr\Http\Message\{
     ResponseInterface
 };
 use SodiumException;
+use function array_key_exists, explode, hash_equals, in_array, is_null;
 
 /**
  * Methods that clients will use for pushing messages to the Public key Directory

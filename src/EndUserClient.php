@@ -14,6 +14,7 @@ use FediE2EE\PKD\Features\{
 };
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
+use function is_null;
 
 /**
  * This class should be used by end users, not fediverse instance software.

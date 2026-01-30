@@ -28,6 +28,7 @@ use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\Exceptions\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
+use function is_null;
 
 /**
  * Protocol message creation trait.

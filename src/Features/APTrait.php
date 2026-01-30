@@ -16,6 +16,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use ParagonIE\Certainty\RemoteFetch;
 use Psr\Http\Message\ResponseInterface;
 use SodiumException;
+use function array_key_exists, dirname, hash_equals, is_null, json_decode, json_last_error_msg;
 
 trait APTrait
 {

@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 namespace FediE2EE\PKD\Features;
 
 use FediE2EE\PKD\Crypto\AttributeEncryption\AttributeKeyMap;
@@ -30,12 +30,19 @@ use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
 
 /**
+ * Protocol message creation trait.
+ *
+ * Provides methods to create PKD protocol messages (AddKey, RevokeKey, etc.)
+ * with proper encryption and signing.
+ *
  * @property SecretKey $sk
  */
 trait ProtocolTrait
 {
     use PublishTrait;
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#addkey
+    //# AddKey: Add a public key to an actor's key set.
     /**
      * @throws ClientException
      * @throws CryptoException
@@ -51,6 +58,8 @@ trait ProtocolTrait
         $recent = $this->preamble();
         $actor = $this->canonicalize($actor);
         $addKey = new AddKey($actor, $newPublicKey);
+        //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#message-attribute-shreddability
+        //# Sensitive attributes (Actor ID, public key) encrypted with unique 256-bit keys.
         $keyring = (new AttributeKeyMap())
             ->addRandomKey('actor')
             ->addRandomKey('public-key');
@@ -58,6 +67,8 @@ trait ProtocolTrait
         return $this->getHandler()->handle($addKey, $this->sk, $keyring, $recent);
     }
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#revokekey
+    //# RevokeKey: Marks an existing public key as untrusted.
     /**
      * @throws ClientException
      * @throws CryptoException
@@ -81,6 +92,8 @@ trait ProtocolTrait
         return $this->getHandler()->handle($revokeKey, $this->sk, $keyring, $recent);
     }
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#revokekeythirdparty
+    //# RevokeKeyThirdParty: Emergency key revocation using a revocation token.
     /**
      * @throws ClientException
      * @throws CryptoException
@@ -96,6 +109,8 @@ trait ProtocolTrait
         return $this->getHandler()->handle($rktp, $this->sk, new AttributeKeyMap(), $recent);
     }
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#moveidentity
+    //# MoveIdentity: Migrate actor identity from old-actor to new-actor.
     /**
      * @throws ClientException
      * @throws CryptoException
@@ -117,6 +132,8 @@ trait ProtocolTrait
         return $this->getHandler()->handle($moveIdentity, $this->sk, $keyring, $recent);
     }
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#burndown
+    //# BurnDown: Soft delete for all public keys and auxiliary data unless Actor is Fireproof.
     /**
      * @throws ClientException
      * @throws CryptoException
@@ -135,6 +152,8 @@ trait ProtocolTrait
         return $this->getHandler()->handle($burnDown, $this->sk, $keyring, $recent);
     }
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#fireproof
+    //# Fireproof: Opts out of BurnDown recovery mechanism.
     protected function createFireproof(string $actor): Bundle
     {
         $recent = $this->preamble();
@@ -145,6 +164,8 @@ trait ProtocolTrait
         return $this->getHandler()->handle($fireproof, $this->sk, $keyring, $recent);
     }
 
+    //= https://raw.githubusercontent.com/fedi-e2ee/public-key-directory-specification/refs/heads/main/Specification.md#undofireproof
+    //# UndoFireproof: Reverts Fireproof status, re-enabling account recovery.
     protected function createUndoFireproof(string $actor): Bundle
     {
         $recent = $this->preamble();

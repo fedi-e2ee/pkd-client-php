@@ -85,7 +85,7 @@ trait FetchTrait
             $this->url . '/api/actor/' . urlencode($canonical) . '/auxiliary'
         );
         if ($auxDataListResponse->getStatusCode() !== 200) {
-            throw new ClientException('Could not retrieve public keys.');
+            throw new ClientException('Could not retrieve auxiliary data.');
         }
         $body = $this->parseJsonResponse($auxDataListResponse, 'fedi-e2ee:v1/api/actor/aux-info');
         $this->assertKeysExist($body, ['auxiliary']);

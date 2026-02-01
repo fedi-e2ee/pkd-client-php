@@ -140,6 +140,9 @@ trait PublishTrait
         if (is_null($this->httpClient)) {
             throw new ClientException('The http client is not injected');
         }
+        if (!property_exists($this, 'url')) {
+            throw new ClientException('Property "url" not defined');
+        }
         // ActivityPub Actor for PKD Server:
         if (is_null($this->serverActorInbox)) {
             $response = $this->httpClient->get($this->url . '/api/info');
@@ -194,9 +197,21 @@ trait PublishTrait
         return new ServerHPKE($hpke, $encapsKey);
     }
 
+    /**
+     * @throws ClientException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
+     * @throws GuzzleException
+     * @throws SodiumException
+     */
     protected function getRecentMerkleRoot(): string
     {
         if (is_null($this->recentMerkleRoot)) {
+            if (!method_exists($this, 'fetchRecentMerkleRoot')) {
+                throw new ClientException(
+                    'Method "fetchRecentMerkleRoot" does not exist on ' . get_class($this)
+                );
+            }
             $this->recentMerkleRoot = $this->fetchRecentMerkleRoot();
         }
         return $this->recentMerkleRoot;

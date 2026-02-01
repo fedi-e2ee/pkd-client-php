@@ -14,6 +14,7 @@
   },
   "autoload-dev": {
     "psr-4": {
+      "FediE2EE\\PKD\\Fuzzing\\": "fuzzing",
       "FediE2EE\\PKD\\IntegrationTests\\": "tests/integration",
       "FediE2EE\\PKD\\Tests\\": "tests/unit"
     }
@@ -30,6 +31,12 @@
     "paragonie/easydb": "^3",
     "phpunit/phpunit": "^8|^9|^10|^11|^12",
     "soatok/mini-fedi-server": "^0",
-    "vimeo/psalm": "^6"
+    "vimeo/psalm": "^6",
+    "phpstan/phpstan": "^2.1"
+  },
+  "config": {
+    "allow-plugins": {
+      "infection/extension-installer": true
+    }
   }
 }

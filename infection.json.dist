@@ -1,0 +1,80 @@
+{
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "threads": "max",
+    "minCoveredMsi": 80,
+    "phpUnit": {
+        "configDir": "."
+    },
+    "mutators": {
+        "@default": true,
+        "ProtectedVisibility": false,
+        "PublicVisibility": false,
+        "MethodCallRemoval": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
+                "FediE2EE\\PKD\\Features\\PublishTrait::fetchServerInfo",
+                "FediE2EE\\PKD\\Features\\PublishTrait::assertSecretKeySet"
+            ]
+        },
+        "BitwiseOr": {
+            "ignoreSourceCodeByRegex": [
+                ".*JSON_.*"
+            ]
+        },
+        "Concat": {
+            "ignoreSourceCodeByRegex": [
+                ".*throw\\s+?new.*"
+            ]
+        },
+        "ConcatOperandRemoval": {
+            "ignoreSourceCodeByRegex": [
+                ".*throw\\s+?new.*"
+            ]
+        },
+        "IfNegation": {
+            "ignoreSourceCodeByRegex": [
+                ".*array_key_exists.*",
+                ".*is_null.*"
+            ]
+        },
+        "LogicalNot": {
+            "ignore": [
+                "FediE2EE\\PKD\\EndUserClient::__construct",
+                "FediE2EE\\PKD\\InstanceClient::__construct"
+            ]
+        },
+        "ArrayItemRemoval": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::getInboxUrl",
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
+            ]
+        },
+        "ArrayItem": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
+            ]
+        },
+        "MatchArmRemoval": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\PublishTrait::getInternalHpke"
+            ]
+        },
+        "LogicalNot": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"
+            ]
+        },
+        "Throw_": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"
+            ]
+        }
+    },
+    "logs": {
+        "text": "infection.log"
+    }
+}

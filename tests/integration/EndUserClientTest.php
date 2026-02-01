@@ -53,9 +53,9 @@ class EndUserClientTest extends TestCase
     {
         $sk = SecretKey::generate();
         $pk = $sk->getPublicKey();
-        $client = new Client('https://pkd.example.com', $pk);
+        $client = new EndUserClient('https://pkd.example.com', $pk);
 
-        $this->assertInstanceOf(Client::class, $client);
+        $this->assertInstanceOf(EndUserClient::class, $client);
     }
 
     public function testFetchPublicKeysWithMockedResponses(): void
@@ -84,7 +84,7 @@ class EndUserClientTest extends TestCase
             'public-keys' => [['public-key' => $actorPk->toString(), 'key-id' => 'key-001', 'trusted' => true]]
         ]));
 
-        $client = new Client('http://pkd.test', $serverPk);
+        $client = new EndUserClient('http://pkd.test', $serverPk);
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
 
         $keys = $client->fetchPublicKeys($actor . '@' . $hostname);

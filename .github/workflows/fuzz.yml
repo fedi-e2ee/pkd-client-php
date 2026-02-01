@@ -1,0 +1,67 @@
+name: Fuzzing
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+  schedule:
+    - cron: '35 10 * * *' # Run fuzz tests daily at 10:35 UTC
+
+permissions: {}
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # 500k runs for releases, 50k for regular CI
+      FUZZ_RUNS: ${{ startsWith(github.ref, 'refs/tags/') && '500000' || '50000' }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          persist-credentials: false
+      - name: Setup PHP
+        uses: shivammathur/setup-php@db91e1a0e48e84637d325a7ee4d2677e146ceec4  # v2.36.0
+        with:
+          php-version: '8.4'
+      - name: Setup PHP-Fuzzer
+        run: composer global require --dev nikic/php-fuzzer
+      - name: Install dependencies
+        run: composer install --optimize-autoloader
+      - name: Run FuzzBase64
+        run: |
+          php-fuzzer fuzz --max-runs "$FUZZ_RUNS" fuzzing/FuzzBase64.php
+          shopt -s nullglob; for f in crash-*.txt; do mv "$f" "${f/crash-/fuzzed-FuzzBase64-}"; done
+      - name: Run FuzzJsonParsing
+        run: |
+          php-fuzzer fuzz --max-runs "$FUZZ_RUNS" fuzzing/FuzzJsonParsing.php
+          shopt -s nullglob; for f in crash-*.txt; do mv "$f" "${f/crash-/fuzzed-FuzzJsonParsing-}"; done
+      - name: Run FuzzHpkeCiphersuite
+        run: |
+          php-fuzzer fuzz --max-runs "$FUZZ_RUNS" fuzzing/FuzzHpkeCiphersuite.php
+          shopt -s nullglob; for f in crash-*.txt; do mv "$f" "${f/crash-/fuzzed-FuzzHpkeCiphersuite-}"; done
+      - name: Run FuzzUrlEncoding
+        run: |
+          php-fuzzer fuzz --max-runs "$FUZZ_RUNS" fuzzing/FuzzUrlEncoding.php
+          shopt -s nullglob; for f in crash-*.txt; do mv "$f" "${f/crash-/fuzzed-FuzzUrlEncoding-}"; done
+      - name: Check for crashes
+        if: always()
+        run: |
+          if compgen -G "fuzzed-*.txt" > /dev/null; then
+            echo "::error::Fuzzing found crashes"
+            echo "=== Crash files found ==="
+            for f in fuzzed-*.txt; do
+              echo "--- $f ---"
+              cat "$f"
+              echo ""
+              echo "Hex dump:"
+              xxd "$f"
+              echo ""
+            done
+            exit 1
+          fi
+          echo "No crashes detected"

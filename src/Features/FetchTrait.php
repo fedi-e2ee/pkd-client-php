@@ -89,12 +89,16 @@ trait FetchTrait
         }
         $body = $this->parseJsonResponse($auxDataListResponse, 'fedi-e2ee:v1/api/actor/aux-info');
         $this->assertKeysExist($body, ['auxiliary']);
-        $this->assertKeysExist($body['auxiliary'], ['aux-id', 'aux-type']);
+        // Note: 'auxiliary' is an array of items, each with 'aux-id' and 'aux-type'
+        // The iteration below naturally handles missing keys by skipping incomplete entries
 
         // Grab the auxiliary data IDs
         $filter = $typeValidator->getAuxDataType();
         $auxIDs = [];
         foreach ($body['auxiliary'] as $aux) {
+            if (!isset($aux['aux-id'], $aux['aux-type'])) {
+                continue; // Skip malformed entries
+            }
             if ($aux['aux-type'] === $filter) {
                 $auxIDs[] = $aux['aux-id'];
             }

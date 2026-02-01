@@ -6,6 +6,7 @@ use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\EndUserClient;
 use FediE2EE\PKD\Extensions\ExtensionInterface;
 use FediE2EE\PKD\Extensions\Registry;
+use FediE2EE\PKD\Tests\TestHelper;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -69,20 +70,13 @@ class EndUserClientTest extends TestCase
         $actor = 'testuser';
         $canonical = 'http://' . $hostname . '/users/' . $actor;
 
-        $webFingerResponse = new Response(200, [
-            'Content-Type' => 'application/jrd+json'
-        ], json_encode([
-            'subject' => 'acct:' . $actor . '@' . $hostname,
-            'links' => [['rel' => 'self', 'type' => 'application/activity+json', 'href' => $canonical]]
-        ]));
+        $webFingerResponse = TestHelper::createWebFingerResponse($actor, $hostname, $canonical);
 
-        $keysResponse = new Response(200, [
-            'Content-Type' => 'application/json'
-        ], json_encode([
-            '!pkd-context' => 'fedi-e2ee:v1/api/actor/get-keys',
-            'actor-id' => $canonical,
-            'public-keys' => [['public-key' => $actorPk->toString(), 'key-id' => 'key-001', 'trusted' => true]]
-        ]));
+        $keysResponse = TestHelper::createPublicKeysResponse(
+            $serverKey,
+            $canonical,
+            [['public-key' => $actorPk->toString(), 'key-id' => 'key-001', 'trusted' => true]]
+        );
 
         $client = new EndUserClient('http://pkd.test', $serverPk);
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
@@ -102,12 +96,7 @@ class EndUserClientTest extends TestCase
         $actor = 'nonexistent';
         $canonical = 'http://' . $hostname . '/users/' . $actor;
 
-        $webFingerResponse = new Response(200, [
-            'Content-Type' => 'application/jrd+json'
-        ], json_encode([
-            'subject' => 'acct:' . $actor . '@' . $hostname,
-            'links' => [['rel' => 'self', 'type' => 'application/activity+json', 'href' => $canonical]]
-        ]));
+        $webFingerResponse = TestHelper::createWebFingerResponse($actor, $hostname, $canonical);
 
         $notFoundResponse = new Response(404, [
             'Content-Type' => 'application/json'
@@ -129,30 +118,21 @@ class EndUserClientTest extends TestCase
         $actor = 'testuser';
         $canonical = 'http://' . $hostname . '/users/' . $actor;
 
-        $webFingerResponse = new Response(200, [
-            'Content-Type' => 'application/jrd+json'
-        ], json_encode([
-            'subject' => 'acct:' . $actor . '@' . $hostname,
-            'links' => [['rel' => 'self', 'type' => 'application/activity+json', 'href' => $canonical]]
-        ]));
+        $webFingerResponse = TestHelper::createWebFingerResponse($actor, $hostname, $canonical);
 
-        $auxListResponse = new Response(200, [
-            'Content-Type' => 'application/json'
-        ], json_encode([
-            '!pkd-context' => 'fedi-e2ee:v1/api/actor/aux-info',
-            'actor-id' => $canonical,
-            'auxiliary' => [['aux-id' => 'aux-001', 'aux-type' => 'test-type']]
-        ]));
+        $auxInfoResponse = TestHelper::createAuxInfoResponse(
+            $serverKey,
+            $canonical,
+            [['aux-id' => 'aux-001', 'aux-type' => 'test-type']]
+        );
 
-        $auxDataResponse = new Response(200, [
-            'Content-Type' => 'application/json'
-        ], json_encode([
-            '!pkd-context' => 'fedi-e2ee:v1/api/actor/get-aux',
-            'actor-id' => $canonical,
-            'aux-id' => 'aux-001',
-            'aux-type' => 'test-type',
-            'aux-data' => 'test-data-value'
-        ]));
+        $auxDataResponse = TestHelper::createAuxDataResponse(
+            $serverKey,
+            $canonical,
+            'aux-001',
+            'test-type',
+            'test-data-value'
+        );
 
         $testExtension = new class implements ExtensionInterface {
             public function getAuxDataType(): string { return 'test-type'; }
@@ -164,7 +144,11 @@ class EndUserClientTest extends TestCase
         $registry->addAuxDataType($testExtension);
 
         $client = new EndUserClient('http://pkd.test', $serverPk, $registry);
-        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxListResponse, $auxDataResponse]));
+        $client->setHttpClient($this->createMockClient([
+            $webFingerResponse,
+            $auxInfoResponse,
+            $auxDataResponse
+        ]));
 
         $auxData = $client->fetchAuxData($actor . '@' . $hostname, 'test-type');
 
@@ -181,20 +165,14 @@ class EndUserClientTest extends TestCase
         $actor = 'testuser';
         $canonical = 'http://' . $hostname . '/users/' . $actor;
 
-        $webFingerResponse = new Response(200, [
-            'Content-Type' => 'application/jrd+json'
-        ], json_encode([
-            'subject' => 'acct:' . $actor . '@' . $hostname,
-            'links' => [['rel' => 'self', 'type' => 'application/activity+json', 'href' => $canonical]]
-        ]));
+        $webFingerResponse = TestHelper::createWebFingerResponse($actor, $hostname, $canonical);
 
-        $auxListResponse = new Response(200, [
-            'Content-Type' => 'application/json'
-        ], json_encode([
-            '!pkd-context' => 'fedi-e2ee:v1/api/actor/aux-info',
-            'actor-id' => $canonical,
-            'auxiliary' => [['aux-id' => 'aux-001', 'aux-type' => 'other-type']]
-        ]));
+        // Aux info returns entries with different type than requested
+        $auxInfoResponse = TestHelper::createAuxInfoResponse(
+            $serverKey,
+            $canonical,
+            [['aux-id' => 'aux-001', 'aux-type' => 'other-type']]
+        );
 
         $testExtension = new class implements ExtensionInterface {
             public function getAuxDataType(): string { return 'test-type'; }
@@ -206,13 +184,14 @@ class EndUserClientTest extends TestCase
         $registry->addAuxDataType($testExtension);
 
         $client = new EndUserClient('http://pkd.test', $serverPk, $registry);
-        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxListResponse]));
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxInfoResponse]));
 
         $auxData = $client->fetchAuxData($actor . '@' . $hostname, 'test-type');
 
         $this->assertCount(0, $auxData);
     }
 
+    #[Group('live-servers')]
     public function testLiveMiniFediServerWebFinger(): void
     {
         if (!$this->isServerRunning(self::MINI_FEDI_PORT)) {
@@ -228,6 +207,7 @@ class EndUserClientTest extends TestCase
         $this->assertContains($response->getStatusCode(), [200, 404]);
     }
 
+    #[Group('live-servers')]
     public function testLivePkdServerPublicKey(): void
     {
         if (!$this->isServerRunning(self::PKD_SERVER_PORT)) {
@@ -242,6 +222,7 @@ class EndUserClientTest extends TestCase
         $this->assertSame('fedi-e2ee:v1/api/server-public-key', $body['!pkd-context']);
     }
 
+    #[Group('live-servers')]
     public function testLivePkdServerHistory(): void
     {
         if (!$this->isServerRunning(self::PKD_SERVER_PORT)) {
@@ -256,6 +237,7 @@ class EndUserClientTest extends TestCase
         $this->assertSame('fedi-e2ee:v1/api/history', $body['!pkd-context']);
     }
 
+    #[Group('live-servers')]
     public function testLivePkdServerExtensions(): void
     {
         if (!$this->isServerRunning(self::PKD_SERVER_PORT)) {

@@ -106,6 +106,33 @@ class APTraitTest extends TestCase
         $this->assertKeysExist($body, ['key1', 'missing-key']);
     }
 
+    public function testAssertKeysExistThrowsOnFirstMissingKey(): void
+    {
+        $body = ['key2' => 'value2'];
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Key is not set in body: key1');
+        $this->assertKeysExist($body, ['key1', 'key2']);
+    }
+
+    public function testAssertKeysExistIteratesThroughAllKeys(): void
+    {
+        $body = ['a' => 1, 'b' => 2, 'c' => 3];
+
+        // All keys present - should not throw
+        $this->assertKeysExist($body, ['a', 'b', 'c']);
+        $this->assertTrue(true);
+    }
+
+    public function testAssertKeysExistThrowsOnSecondMissingKey(): void
+    {
+        $body = ['key1' => 'value1', 'key3' => 'value3'];
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Key is not set in body: key2');
+        $this->assertKeysExist($body, ['key1', 'key2', 'key3']);
+    }
+
     public function testAssertKeysExistWithEmptyKeys(): void
     {
         $body = ['key1' => 'value1'];

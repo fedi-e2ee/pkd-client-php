@@ -30,8 +30,5 @@ jobs:
       - name: Install Composer dependencies
         uses: ramsey/composer-install@b38926e6aa883a48335a05214b1d7afe9d9913ca  # v3.1.1
 
-      - name: Initialize Database
-        run: php cmd/init.php
-
       - name: Static Analysis
         run: vendor/bin/phpstan analyse --memory-limit 2048M

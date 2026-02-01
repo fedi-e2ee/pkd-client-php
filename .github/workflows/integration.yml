@@ -101,7 +101,7 @@ jobs:
       - name: Run integration tests
         run: |
           cd pkd-client-php
-          vendor/bin/phpunit --testsuite integration --group integration,live-servers
+          vendor/bin/phpunit --testsuite integration --group integration
 
       - name: Show server logs on failure
         if: failure()

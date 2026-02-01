@@ -7,6 +7,7 @@ use FediE2EE\PKD\EndUserClient;
 use FediE2EE\PKD\Extensions\ExtensionInterface;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\Tests\TestHelper;
+use FediE2EE\PKD\Values\AuxData;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Throwable;
 
 #[CoversClass(EndUserClient::class)]
+#[CoversClass(AuxData::class)]
 #[Group('integration')]
 class EndUserClientTest extends TestCase
 {

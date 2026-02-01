@@ -1,12 +1,13 @@
 <?php
 declare(strict_types=1);
-namespace FediE2EE\PKD\Tests;
+namespace FediE2EE\PKD\IntegrationTests;
 
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\EndUserClient;
 use FediE2EE\PKD\Extensions\ExtensionInterface;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\ReadOnlyClient;
+use FediE2EE\PKD\Tests\TestHelper;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -36,7 +37,7 @@ use function substr;
  */
 #[CoversClass(EndUserClient::class)]
 #[CoversClass(ReadOnlyClient::class)]
-#[Group('unit')]
+#[Group('integration')]
 #[Group('test-vectors')]
 class VectorsTest extends TestCase
 {

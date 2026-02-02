@@ -111,17 +111,30 @@ class PublishTraitTest extends TestCase
      * @throws ClientException
      * @throws SodiumException
      */
-    public function testGetInternalHpkeThrowsOnCurve25519(): void
+    public function testGetInternalHpkeThrowsOnInvalidCurve(): void
     {
         $keyPair = sodium_crypto_box_keypair();
         $publicKey = sodium_crypto_box_publickey($keyPair);
         $pk = \ParagonIE\ConstantTime\Base64UrlSafe::encodeUnpadded($publicKey);
 
-        // Note: The code has a bug where it throws on "Curve25519" but the default is "Curve25519_SHA256_ChachaPoly"
-        // This test documents the current behavior
         $this->expectException(ClientException::class);
-        $this->expectExceptionMessage('Invalid curve: Curve25519');
-        $this->getInternalHpke('Curve25519_SHA256_ChaChaPoly', $pk);
+        $this->expectExceptionMessage('Invalid curve: ed25519');
+        $this->getInternalHpke('Ed25519_SHA256_ChaChaPoly', $pk);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws SodiumException
+     */
+    public function testGetInternalHpkeThrowsOnInvalidAEAD(): void
+    {
+        $keyPair = sodium_crypto_box_keypair();
+        $publicKey = sodium_crypto_box_publickey($keyPair);
+        $pk = \ParagonIE\ConstantTime\Base64UrlSafe::encodeUnpadded($publicKey);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid AEAD: InvalidAEAD');
+        $this->getInternalHpke('X25519_SHA256_InvalidAEAD', $pk);
     }
 
     public function testWithRecentMerkleRoot(): void

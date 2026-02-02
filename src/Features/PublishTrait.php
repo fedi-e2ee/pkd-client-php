@@ -179,18 +179,20 @@ trait PublishTrait
     protected function getInternalHpke(string $ciphersuite, string $pk): ServerHPKE
     {
         [$curveName, $hash, $aead] = explode('_', $ciphersuite);
-        if ($curveName === 'Curve25519') {
+        $curveName = strtolower($curveName);
+        if ($curveName !== 'curve25519' && $curveName !== 'x25519') {
             throw new ClientException('Invalid curve: ' . $curveName);
         }
-        $kdf = new HKDF(Hash::from($hash));
+        $kdf = new HKDF(Hash::from(strtolower($hash)));
         $kem = new DiffieHellmanKEM(Curve::X25519, $kdf);
         $hpke = new HPKE(
             $kem,
             $kdf,
-            match($aead) {
-                'Aes128GCM' => new AES128GCM(),
-                'Aes256GCM' => new AES256GCM(),
-                'ChaChaPoly' => new ChaCha20Poly1305(),
+            match(strtolower($aead)) {
+                'aes128gcm' => new AES128GCM(),
+                'aes256gcm' => new AES256GCM(),
+                'chachapoly' => new ChaCha20Poly1305(),
+                default => throw new ClientException('Invalid AEAD: ' . $aead),
             }
         );
         $encapsKey = new EncapsKey(Curve::X25519, Base64UrlSafe::decodeNoPadding($pk));

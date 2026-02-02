@@ -7,6 +7,13 @@ use FediE2EE\PKD\Crypto\{
     SecretKey,
 };
 use FediE2EE\PKD\Exceptions\ClientException;
+use FediE2EE\PKD\Crypto\Exceptions\{
+    CryptoException,
+    HttpSignatureException,
+    JsonException,
+    NetworkException,
+    NotImplementedException
+};
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\Features\{
     FetchTrait,
@@ -52,11 +59,11 @@ final class EndUserClient extends AbstractClient
      * @api
      *
      * @throws ClientException
-     * @throws Crypto\Exceptions\CryptoException
-     * @throws Crypto\Exceptions\HttpSignatureException
-     * @throws Crypto\Exceptions\JsonException
-     * @throws Crypto\Exceptions\NetworkException
-     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws CryptoException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
      * @throws GuzzleException
      * @throws SodiumException
      */
@@ -71,9 +78,9 @@ final class EndUserClient extends AbstractClient
      * @api
      *
      * @throws ClientException
-     * @throws Crypto\Exceptions\CryptoException
-     * @throws Crypto\Exceptions\HttpSignatureException
-     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws CryptoException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
      * @throws GuzzleException
      * @throws SodiumException
      */
@@ -87,11 +94,11 @@ final class EndUserClient extends AbstractClient
     /**
      * @api
      * @throws ClientException
-     * @throws Crypto\Exceptions\CryptoException
-     * @throws Crypto\Exceptions\HttpSignatureException
-     * @throws Crypto\Exceptions\JsonException
-     * @throws Crypto\Exceptions\NetworkException
-     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws CryptoException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
      * @throws GuzzleException
      * @throws SodiumException
      */
@@ -105,10 +112,10 @@ final class EndUserClient extends AbstractClient
     /**
      * @api
      * @throws ClientException
-     * @throws Crypto\Exceptions\CryptoException
-     * @throws Crypto\Exceptions\HttpSignatureException
-     * @throws Crypto\Exceptions\JsonException
-     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws CryptoException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NotImplementedException
      * @throws GuzzleException
      * @throws SodiumException
      */
@@ -120,11 +127,11 @@ final class EndUserClient extends AbstractClient
     /**
      * @api
      * @throws ClientException
-     * @throws Crypto\Exceptions\CryptoException
-     * @throws Crypto\Exceptions\HttpSignatureException
-     * @throws Crypto\Exceptions\JsonException
-     * @throws Crypto\Exceptions\NetworkException
-     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws CryptoException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
      * @throws GuzzleException
      * @throws SodiumException
      */
@@ -149,6 +156,7 @@ final class EndUserClient extends AbstractClient
     /**
      * @api
      * @throws ClientException
+     * @throws JsonException
      */
     public function fireproof(?string $actor = null): string
     {
@@ -160,6 +168,7 @@ final class EndUserClient extends AbstractClient
     /**
      * @api
      * @throws ClientException
+     * @throws JsonException
      */
     public function undoFireproof(?string $actor = null): string
     {
@@ -175,11 +184,11 @@ final class EndUserClient extends AbstractClient
      *
      * @api
      * @throws ClientException
-     * @throws Crypto\Exceptions\CryptoException
-     * @throws Crypto\Exceptions\HttpSignatureException
-     * @throws Crypto\Exceptions\JsonException
-     * @throws Crypto\Exceptions\NetworkException
-     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws CryptoException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
      * @throws GuzzleException
      * @throws SodiumException
      */

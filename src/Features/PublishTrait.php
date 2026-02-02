@@ -36,7 +36,7 @@ use Psr\Http\Message\{
     ResponseInterface
 };
 use SodiumException;
-use function array_key_exists, explode, hash_equals, in_array, is_null;
+use function array_key_exists, explode, hash_equals, in_array, is_null, is_string;
 
 /**
  * Methods that clients will use for pushing messages to the Public key Directory
@@ -148,10 +148,10 @@ trait PublishTrait
             $response = $this->httpClient->get($this->url . '/api/info');
             $this->verifyHttpSignature($response);
             $info = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/info');
-            if (!array_key_exists('actor', $info)) {
+            if (!array_key_exists('actor', $info) || !is_string($info['actor'])) {
                 throw new ClientException('The server actor does not exist');
             }
-            if (!array_key_exists('public-key', $info)) {
+            if (!array_key_exists('public-key', $info) || !is_string($info['public-key'])) {
                 throw new ClientException('The server public key does not exist');
             }
             if (!hash_equals($this->pk->toString(), $info['public-key'])) {
@@ -166,13 +166,14 @@ trait PublishTrait
             $response = $this->httpClient->get($this->url . '/api/server-public-key');
             $this->verifyHttpSignature($response);
             $results = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/server-public-key');
-            if (!array_key_exists('hpke-public-key', $results)) {
+            if (!array_key_exists('hpke-public-key', $results) || !is_string($results['hpke-public-key'])) {
                 throw new ClientException('The server public key does not exist');
             }
-            $this->serverHPKE = $this->getInternalHpke(
-                $results['hpke-ciphersuite'] ?? 'Curve25519_SHA256_ChachaPoly',
-                $results['hpke-public-key'],
-            );
+            $ciphersuite = $results['hpke-ciphersuite'] ?? 'Curve25519_SHA256_ChachaPoly';
+            if (!is_string($ciphersuite)) {
+                throw new ClientException('Invalid ciphersuite format');
+            }
+            $this->serverHPKE = $this->getInternalHpke($ciphersuite, $results['hpke-public-key']);
         }
     }
 

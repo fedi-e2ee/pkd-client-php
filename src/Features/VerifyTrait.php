@@ -8,12 +8,7 @@ use FediE2EE\PKD\Exceptions\ClientException;
 use FediE2EE\PKD\Values\VerifiedPublicKey;
 use ParagonIE\ConstantTime\Base64UrlSafe;
 use SodiumException;
-use function array_key_exists;
-use function is_array;
-use function is_int;
-use function is_null;
-use function strlen;
-use function urlencode;
+use function array_key_exists, is_array, is_int, is_null, is_string, strlen, urlencode;
 
 trait VerifyTrait
 {
@@ -120,6 +115,13 @@ trait VerifyTrait
         $body = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/actor/get-keys');
         $this->assertKeysExist($body, ['actor-id', 'public-keys', 'merkle-root', 'tree-size']);
 
+        if (!is_string($body['merkle-root'])) {
+            throw new ClientException('Invalid merkle-root format');
+        }
+        if (!is_array($body['public-keys'])) {
+            throw new ClientException('Invalid public-keys format');
+        }
+
         $merkleRoot = $body['merkle-root'];
         $treeSize = (int) $body['tree-size'];
         $verifiedKeys = [];
@@ -128,6 +130,7 @@ trait VerifyTrait
             if (!$this->hasRequiredProofFields($row)) {
                 throw new ClientException('Missing inclusion proof fields for public key');
             }
+            /** @var array{inclusion-proof: array<string>, leaf-index: int, public-key: string, merkle-leaf: string} $row */
 
             $proof = $this->parseInclusionProof($row);
             $merkleLeaf = Base64UrlSafe::decodeNoPadding($row['merkle-leaf']);
@@ -174,7 +177,7 @@ trait VerifyTrait
     /**
      * Parse an inclusion proof from a response row.
      *
-     * @param array{inclusion-proof: string[], leaf-index: int} $row
+     * @param array{inclusion-proof: array<string>, leaf-index: int, ...} $row
      */
     protected function parseInclusionProof(array $row): InclusionProof
     {

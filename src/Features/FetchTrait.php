@@ -15,7 +15,7 @@ use FediE2EE\PKD\Crypto\Exceptions\{
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
 use Throwable;
-use function is_null, urlencode;
+use function is_array, is_null, is_string, urlencode;
 
 /**
  *  Methods that clients will use for pulling messages from the Public key Directory
@@ -25,6 +25,8 @@ trait FetchTrait
     use APTrait;
 
     /**
+     * @return PublicKey[]
+     *
      * @throws ClientException
      * @throws GuzzleException
      * @throws HttpSignatureException
@@ -49,8 +51,14 @@ trait FetchTrait
         $this->verifyHttpSignature($response);
         $body = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/actor/get-keys');
         $this->assertKeysExist($body, ['actor-id', 'public-keys']);
+        if (!is_array($body['public-keys'])) {
+            throw new ClientException('Invalid public-keys format');
+        }
         $publicKeys = [];
         foreach ($body['public-keys'] as $row) {
+            if (!is_array($row) || !isset($row['public-key']) || !is_string($row['public-key'])) {
+                throw new ClientException('Invalid public key entry');
+            }
             // Create Public Key with metadata.
             $pk = PublicKey::fromString($row['public-key']);
             $meta = $row;
@@ -95,8 +103,14 @@ trait FetchTrait
         // Grab the auxiliary data IDs
         $filter = $typeValidator->getAuxDataType();
         $auxIDs = [];
+        if (!is_array($body['auxiliary'])) {
+            throw new ClientException('Invalid auxiliary format');
+        }
         foreach ($body['auxiliary'] as $aux) {
-            if (!isset($aux['aux-id'], $aux['aux-type'])) {
+            if (!is_array($aux) || !isset($aux['aux-id'], $aux['aux-type'])) {
+                continue; // Skip malformed entries
+            }
+            if (!is_string($aux['aux-id']) || !is_string($aux['aux-type'])) {
                 continue; // Skip malformed entries
             }
             if ($aux['aux-type'] === $filter) {
@@ -126,6 +140,7 @@ trait FetchTrait
      * @param string $auxDataTypeID
      * @return ?AuxData
      *
+     * @throws ClientException
      * @throws GuzzleException
      * @throws JsonException
      * @throws NetworkException
@@ -144,6 +159,9 @@ trait FetchTrait
      *
      * @throws ClientException
      * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
+     * @throws SodiumException
      */
     protected function fetchAuxDataInternal(
         string $canonical,
@@ -194,6 +212,9 @@ trait FetchTrait
         $response = $this->httpClient->get($this->url . '/api/history');
         $this->verifyHttpSignature($response);
         $body = $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/history');
+        if (!isset($body['merkle-root']) || !is_string($body['merkle-root'])) {
+            throw new ClientException('Invalid merkle-root format');
+        }
         return $body['merkle-root'];
     }
 }

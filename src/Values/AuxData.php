@@ -2,7 +2,7 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\Values;
 
-readonly class AuxData
+final readonly class AuxData
 {
     public function __construct(
         public string $type,

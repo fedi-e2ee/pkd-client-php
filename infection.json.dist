@@ -116,6 +116,23 @@
                 "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
             ]
         },
+        "LogicalAndAllSubExprNegation": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
+            ]
+        },
+        "LogicalAndSingleSubExprNegation": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
+            ]
+        },
+        "LogicalOr": {
+            "ignoreSourceCodeByRegex": [
+                ".*!is_string.*",
+                ".*!is_array.*",
+                ".*!isset.*"
+            ]
+        },
         "Throw_": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"

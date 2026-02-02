@@ -5,7 +5,7 @@ namespace FediE2EE\PKD\Values;
 use ParagonIE\HPKE\HPKE;
 use ParagonIE\HPKE\Interfaces\EncapsKeyInterface;
 
-readonly class ServerHPKE
+final readonly class ServerHPKE
 {
     public function __construct(
         public HPKE $ciphersuite,

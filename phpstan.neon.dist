@@ -1,5 +1,36 @@
 parameters:
-	level: 3
+	level: 9
 	paths:
 		- src
 		- tests
+	ignoreErrors:
+		# ProtocolTrait uses runtime assertion (assertSecretKeySet) that PHPStan can't track
+		- message: '#Parameter \#2 \$secretKey of method .+::handle\(\) expects FediE2EE\\PKD\\Crypto\\SecretKey, FediE2EE\\PKD\\Crypto\\SecretKey\|null given#'
+		  path: src/Features/ProtocolTrait.php
+		# APTrait used in anonymous test classes where $pk may be unset
+		- message: '#Parameter \#1 \$publicKey of method .+::verify\(\) expects FediE2EE\\PKD\\Crypto\\PublicKey, FediE2EE\\PKD\\Crypto\\PublicKey\|null given#'
+		  path: src/Features/APTrait.php
+		# PublishTrait null checks don't propagate across control flow
+		- message: '#Cannot call method get\(\) on GuzzleHttp\\Client\|null#'
+		  path: src/Features/PublishTrait.php
+		# Defensive runtime checks that are always true for actual implementations
+		- message: '#will always evaluate to (true|false)#'
+		  paths:
+		    - src/Features/PublishTrait.php
+		    - tests/
+		# Test files - relax type annotations and false returns
+		- message: '#has parameter .+ with no value type specified in iterable type#'
+		  path: tests/
+		- message: '#return type has no value type specified in iterable type#'
+		  path: tests/
+		- message: '#should return .+ but returns .+\|(false|null)#'
+		  path: tests/
+		- message: '#expects .+, .+\|false given#'
+		  path: tests/
+		- message: '#Cannot access offset .+ on mixed#'
+		  path: tests/
+		- message: '#does not accept mixed#'
+		  path: tests/
+		# Allow unused methods in test helpers
+		- message: '#is unused#'
+		  path: tests/

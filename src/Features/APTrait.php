@@ -16,7 +16,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use ParagonIE\Certainty\RemoteFetch;
 use Psr\Http\Message\ResponseInterface;
 use SodiumException;
-use function array_key_exists, dirname, hash_equals, is_null, json_decode, json_last_error_msg;
+use function array_key_exists, dirname, hash_equals, is_array, is_null, is_string, json_decode, json_last_error_msg;
 
 trait APTrait
 {
@@ -52,7 +52,7 @@ trait APTrait
             ]
         ]);
         $parsed = $this->parseJsonResponse($response);
-        if (!array_key_exists('inbox', $parsed)) {
+        if (!array_key_exists('inbox', $parsed) || !is_string($parsed['inbox'])) {
             throw new ClientException('JSON response did not contain inbox field');
         }
         return $parsed['inbox'];
@@ -94,6 +94,8 @@ trait APTrait
     }
 
     /**
+     * @return array<array-key, mixed>
+     *
      * @throws ClientException
      */
     public function parseJsonResponse(ResponseInterface $response, ?string $expectedContext = null): array
@@ -110,7 +112,7 @@ trait APTrait
             throw new ClientException('Invalid JSON response: expected object or array');
         }
         if ($expectedContext !== null) {
-            if (!array_key_exists('!pkd-context', $decoded)) {
+            if (!array_key_exists('!pkd-context', $decoded) || !is_string($decoded['!pkd-context'])) {
                 throw new ClientException('Invalid PKD context for response.');
             }
             if (!hash_equals($expectedContext, $decoded['!pkd-context'])) {
@@ -120,6 +122,12 @@ trait APTrait
         return $decoded;
     }
 
+    /**
+     * @param array<array-key, mixed> $body
+     * @param list<string> $keys
+     *
+     * @throws ClientException
+     */
     public function assertKeysExist(array $body, array $keys): void
     {
         foreach ($keys as $key) {

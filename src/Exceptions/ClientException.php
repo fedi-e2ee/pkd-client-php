@@ -4,7 +4,7 @@ namespace FediE2EE\PKD\Exceptions;
 
 use Exception;
 
-class ClientException extends Exception
+final class ClientException extends Exception
 {
 
 }

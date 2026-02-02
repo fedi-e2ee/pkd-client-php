@@ -7,7 +7,7 @@ use FediE2EE\PKD\Crypto\PublicKey;
 /**
  * A public key with its Merkle inclusion proof verification status.
  */
-readonly class VerifiedPublicKey
+final readonly class VerifiedPublicKey
 {
     public function __construct(
         public PublicKey $publicKey,

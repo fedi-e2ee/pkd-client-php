@@ -68,8 +68,11 @@ class InstanceClientTest extends TestCase
         $this->assertTrue(method_exists($client, 'publish'));
         $this->assertTrue(method_exists($client, 'burnDown'));
         $this->assertTrue(method_exists($client, 'checkpoint'));
-        $this->assertTrue(method_exists($client, 'fetchPublicKeys'));
-        $this->assertTrue(method_exists($client, 'fetchAuxData'));
+        // InstanceClient only has FetchTrait (unverified methods)
+        // Use ReadOnlyClient or EndUserClient for verified fetch methods
+        $this->assertTrue(method_exists($client, 'fetchUnverifiedPublicKeys'));
+        $this->assertTrue(method_exists($client, 'fetchUnverifiedAuxData'));
+        $this->assertTrue(method_exists($client, 'fetchAuxDataByID'));
     }
 
     public function testSetHttpClient(): void

@@ -158,4 +158,40 @@ final class TestHelper
             'fedi-e2ee:v1/api/actor/get-aux'
         );
     }
+
+    /**
+     * Create a signed auxiliary info response with inclusion proofs.
+     *
+     * @param SecretKey $serverKey Server's signing key
+     * @param string $actorId Canonical actor ID
+     * @param array<int, array{
+     *     aux-id: string,
+     *     aux-type: string,
+     *     aux-data: string,
+     *     actor-id: string,
+     *     inclusion-proof: array<string>,
+     *     merkle-leaf: string,
+     *     leaf-index: int
+     * }> $auxiliary Array of aux data with proofs
+     * @param string $merkleRoot The merkle root (prefixed)
+     * @param int $treeSize Total tree size
+     */
+    public static function createAuxInfoWithProofsResponse(
+        SecretKey $serverKey,
+        string $actorId,
+        array $auxiliary,
+        string $merkleRoot,
+        int $treeSize
+    ): Response {
+        return self::createSignedJsonResponse(
+            $serverKey,
+            [
+                'actor-id' => $actorId,
+                'auxiliary' => $auxiliary,
+                'merkle-root' => $merkleRoot,
+                'tree-size' => $treeSize
+            ],
+            'fedi-e2ee:v1/api/actor/aux-info'
+        );
+    }
 }

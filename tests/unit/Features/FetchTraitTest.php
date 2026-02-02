@@ -80,7 +80,7 @@ class FetchTraitTest extends TestCase
             $history
         );
 
-        $this->fetchPublicKeys('alice@example.com');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
 
         // Second request should be to the keys endpoint
         $this->assertCount(2, $history);
@@ -108,7 +108,7 @@ class FetchTraitTest extends TestCase
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Invalid HTTP Signature');
-        $this->fetchPublicKeys('alice@example.com');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
     }
 
     public function testFetchPublicKeysAssertRequiredKeys(): void
@@ -127,7 +127,7 @@ class FetchTraitTest extends TestCase
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Key is not set in body: actor-id');
-        $this->fetchPublicKeys('alice@example.com');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
     }
 
     public function testFetchPublicKeysSetsMetadata(): void
@@ -149,7 +149,7 @@ class FetchTraitTest extends TestCase
 
         $this->httpClient = $this->createMockClient([$webFingerResponse, $keysResponse]);
 
-        $keys = $this->fetchPublicKeys('alice@example.com');
+        $keys = $this->fetchUnverifiedPublicKeys('alice@example.com');
 
         $this->assertCount(1, $keys);
         $metadata = $keys[0]->getMetadata();
@@ -173,7 +173,7 @@ class FetchTraitTest extends TestCase
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Could not retrieve public keys');
-        $this->fetchPublicKeys('alice@example.com');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
     }
 
     public function testFetchAuxDataBuildsCorrectUrl(): void
@@ -207,7 +207,7 @@ class FetchTraitTest extends TestCase
             $history
         );
 
-        $this->fetchAuxData('bob@example.com', 'test-type');
+        $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
 
         // Check the aux-info URL
         $this->assertCount(3, $history);
@@ -260,7 +260,7 @@ class FetchTraitTest extends TestCase
 
         $this->httpClient = $this->createMockClient([$webFingerResponse, $auxInfoResponse, $auxDataResponse]);
 
-        $result = $this->fetchAuxData('bob@example.com', 'test-type');
+        $result = $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
 
         // Only the valid entry should be fetched
         $this->assertCount(1, $result);
@@ -329,7 +329,7 @@ class FetchTraitTest extends TestCase
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Key is not set in body: auxiliary');
-        $this->fetchAuxData('bob@example.com', 'test-type');
+        $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
     }
 
     public function testFetchAuxDataReturnsMultipleItems(): void
@@ -388,7 +388,7 @@ class FetchTraitTest extends TestCase
             $auxDataResponse3
         ]);
 
-        $result = $this->fetchAuxData('bob@example.com', 'test-type');
+        $result = $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
 
         // All three items should be returned
         $this->assertCount(3, $result);
@@ -481,7 +481,7 @@ class FetchTraitTest extends TestCase
         $this->httpClient = $this->createMockClient([$webFingerResponse, $auxInfoResponse]);
 
         // Should return empty array because no aux entries match 'wanted-type'
-        $result = $this->fetchAuxData('bob@example.com', 'wanted-type');
+        $result = $this->fetchUnverifiedAuxData('bob@example.com', 'wanted-type');
 
         $this->assertIsArray($result);
         $this->assertEmpty($result);

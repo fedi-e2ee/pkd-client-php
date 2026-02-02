@@ -16,14 +16,15 @@
         "MethodCallRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
-                "FediE2EE\\PKD\\Features\\FetchTrait::fetchPublicKeys",
-                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxData",
-                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxDataByID",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedPublicKeys",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxData",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxDataByID",
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchRecentMerkleRoot",
                 "FediE2EE\\PKD\\Features\\PublishTrait::fetchServerInfo",
                 "FediE2EE\\PKD\\Features\\PublishTrait::assertSecretKeySet",
                 "FediE2EE\\PKD\\Features\\ProtocolTrait::preamble",
-                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAuxData"
             ]
         },
         "BitwiseOr": {
@@ -36,7 +37,7 @@
                 ".*throw\\s+?new.*"
             ],
             "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys"
             ]
         },
         "ConcatOperandRemoval": {
@@ -44,7 +45,7 @@
                 ".*throw\\s+?new.*"
             ],
             "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys"
             ]
         },
         "IfNegation": {
@@ -58,14 +59,15 @@
                 "FediE2EE\\PKD\\EndUserClient::__construct",
                 "FediE2EE\\PKD\\InstanceClient::__construct",
                 "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse",
-                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredAuxDataProofFields"
             ]
         },
         "ArrayItemRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\APTrait::getInboxUrl",
                 "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
-                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys"
             ]
         },
         "ArrayItem": {
@@ -97,7 +99,7 @@
         "ReturnRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\EndUserClient::flattenActor",
-                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxData",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxData",
                 "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
             ]
         },
@@ -108,22 +110,25 @@
         },
         "CastInt": {
             "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys"
             ]
         },
         "LogicalAnd": {
             "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredAuxDataProofFields"
             ]
         },
         "LogicalAndAllSubExprNegation": {
             "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredAuxDataProofFields"
             ]
         },
         "LogicalAndSingleSubExprNegation": {
             "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredAuxDataProofFields"
             ]
         },
         "LogicalOr": {

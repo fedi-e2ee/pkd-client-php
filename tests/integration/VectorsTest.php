@@ -210,7 +210,7 @@ class VectorsTest extends TestCase
         $client = new ReadOnlyClient('http://pkd.test', $serverPk);
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
 
-        $fetchedKeys = $client->fetchPublicKeys($actor . '@' . $hostname);
+        $fetchedKeys = $client->fetchUnverifiedPublicKeys($actor . '@' . $hostname);
 
         $this->assertCount(
             count($expectedKeys),
@@ -298,7 +298,7 @@ class VectorsTest extends TestCase
 
         // Fetch for first aux type in list
         $firstAuxType = $auxDataEntries[0]['aux-type'] ?? 'test-v1';
-        $fetchedAuxData = $client->fetchAuxData($actor . '@' . $hostname, $firstAuxType);
+        $fetchedAuxData = $client->fetchUnverifiedAuxData($actor . '@' . $hostname, $firstAuxType);
 
         // Count expected entries of this type
         $expectedCount = count(array_filter(
@@ -366,7 +366,7 @@ class VectorsTest extends TestCase
         $client = new ReadOnlyClient('http://pkd.test', $serverPk);
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
 
-        $fetchedKeys = $client->fetchPublicKeys('newuser@example.com');
+        $fetchedKeys = $client->fetchUnverifiedPublicKeys('newuser@example.com');
 
         $this->assertCount(0, $fetchedKeys);
     }

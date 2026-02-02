@@ -60,8 +60,12 @@ class ReadOnlyClientTest extends TestCase
         $pk = $sk->getPublicKey();
         $client = new ReadOnlyClient('https://pkd.example.com', $pk);
 
+        // Verified fetch methods (from VerifyTrait) - default/recommended
         $this->assertTrue(method_exists($client, 'fetchPublicKeys'));
         $this->assertTrue(method_exists($client, 'fetchAuxData'));
+        // Unverified fetch methods (from FetchTrait) - use with caution
+        $this->assertTrue(method_exists($client, 'fetchUnverifiedPublicKeys'));
+        $this->assertTrue(method_exists($client, 'fetchUnverifiedAuxData'));
         $this->assertTrue(method_exists($client, 'fetchAuxDataByID'));
         $this->assertTrue(method_exists($client, 'setHttpClient'));
     }

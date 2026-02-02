@@ -83,7 +83,7 @@ class EndUserClientTest extends TestCase
         $client = new EndUserClient('http://pkd.test', $serverPk);
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
 
-        $keys = $client->fetchPublicKeys($actor . '@' . $hostname);
+        $keys = $client->fetchUnverifiedPublicKeys($actor . '@' . $hostname);
 
         $this->assertCount(1, $keys);
         $this->assertSame($actorPk->toString(), $keys[0]->toString());
@@ -108,7 +108,7 @@ class EndUserClientTest extends TestCase
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $notFoundResponse]));
 
         $this->expectException(Throwable::class);
-        $client->fetchPublicKeys($actor . '@' . $hostname);
+        $client->fetchUnverifiedPublicKeys($actor . '@' . $hostname);
     }
 
     public function testFetchAuxDataWithMockedResponses(): void
@@ -152,7 +152,7 @@ class EndUserClientTest extends TestCase
             $auxDataResponse
         ]));
 
-        $auxData = $client->fetchAuxData($actor . '@' . $hostname, 'test-type');
+        $auxData = $client->fetchUnverifiedAuxData($actor . '@' . $hostname, 'test-type');
 
         $this->assertCount(1, $auxData);
         $this->assertSame('test-data-value', $auxData[0]->data);
@@ -188,7 +188,7 @@ class EndUserClientTest extends TestCase
         $client = new EndUserClient('http://pkd.test', $serverPk, $registry);
         $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxInfoResponse]));
 
-        $auxData = $client->fetchAuxData($actor . '@' . $hostname, 'test-type');
+        $auxData = $client->fetchUnverifiedAuxData($actor . '@' . $hostname, 'test-type');
 
         $this->assertCount(0, $auxData);
     }

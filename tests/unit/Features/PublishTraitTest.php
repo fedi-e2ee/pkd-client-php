@@ -139,19 +139,28 @@ class PublishTraitTest extends TestCase
 
     public function testWithRecentMerkleRoot(): void
     {
-        $result = $this->withRecentMerkleRoot('abc123');
+        $validRoot = 'pkd-mr-v1:abc123';
+        $result = $this->withRecentMerkleRoot($validRoot);
 
         $this->assertSame($this, $result);
-        $this->assertSame('abc123', $this->recentMerkleRoot);
+        $this->assertSame($validRoot, $this->recentMerkleRoot);
     }
 
     public function testWithRecentMerkleRootNull(): void
     {
-        $this->recentMerkleRoot = 'existing';
+        $this->recentMerkleRoot = 'pkd-mr-v1:existing';
         $result = $this->withRecentMerkleRoot(null);
 
         $this->assertSame($this, $result);
         $this->assertNull($this->recentMerkleRoot);
+    }
+
+    public function testWithRecentMerkleRootRejectsInvalidFormat(): void
+    {
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage("Invalid Merkle root format: must start with 'pkd-mr-v1:'");
+
+        $this->withRecentMerkleRoot('invalid-format');
     }
 
     public function testWithServerActorInbox(): void

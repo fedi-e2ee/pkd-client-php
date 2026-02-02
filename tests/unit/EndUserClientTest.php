@@ -88,8 +88,12 @@ class EndUserClientTest extends TestCase
         $this->assertTrue(method_exists($client, 'burnDown'));
         $this->assertTrue(method_exists($client, 'fireproof'));
         $this->assertTrue(method_exists($client, 'undoFireproof'));
+        // Verified fetch methods (default/recommended)
         $this->assertTrue(method_exists($client, 'fetchPublicKeys'));
         $this->assertTrue(method_exists($client, 'fetchAuxData'));
+        // Unverified fetch methods (use with caution)
+        $this->assertTrue(method_exists($client, 'fetchUnverifiedPublicKeys'));
+        $this->assertTrue(method_exists($client, 'fetchUnverifiedAuxData'));
     }
 
     public function testSetHttpClient(): void

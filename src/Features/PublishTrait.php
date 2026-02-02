@@ -220,8 +220,26 @@ trait PublishTrait
         return $this->recentMerkleRoot;
     }
 
+    /**
+     * Set a known Merkle root to use for protocol messages.
+     *
+     * WARNING: Using a stale Merkle root may cause messages to be rejected
+     * by the server or enable rollback attacks. Only use this if you have
+     * a recently fetched root that you trust.
+     *
+     * @param string|null $recent The Merkle root (must have 'pkd-mr-v1:' prefix) or null to fetch lazily
+     * @throws ClientException If the format is invalid
+     */
     public function withRecentMerkleRoot(?string $recent): static
     {
+        if ($recent !== null) {
+            $prefix = 'pkd-mr-v1:';
+            if (!str_starts_with($recent, $prefix)) {
+                throw new ClientException(
+                    "Invalid Merkle root format: must start with '{$prefix}'"
+                );
+            }
+        }
         $this->recentMerkleRoot = $recent;
         return $this;
     }

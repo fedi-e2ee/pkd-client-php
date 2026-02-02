@@ -25,6 +25,12 @@ trait FetchTrait
     use APTrait;
 
     /**
+     * Fetch public keys WITHOUT Merkle proof verification.
+     *
+     * WARNING: These keys are NOT verified against the Merkle tree.
+     * For most use cases, prefer fetchPublicKeys() from VerifyTrait which
+     * returns VerifiedPublicKey[] with inclusion proof verification.
+     *
      * @return PublicKey[]
      *
      * @throws ClientException
@@ -35,7 +41,7 @@ trait FetchTrait
      * @throws NotImplementedException
      * @throws SodiumException
      */
-    public function fetchPublicKeys(string $actor): array
+    public function fetchUnverifiedPublicKeys(string $actor): array
     {
         $this->ensureHttpClientConfigured();
         $canonical = $this->canonicalize($actor);
@@ -70,6 +76,12 @@ trait FetchTrait
     }
 
     /**
+     * Fetch auxiliary data WITHOUT Merkle proof verification.
+     *
+     * WARNING: This data is NOT verified against the Merkle tree.
+     * For most use cases, prefer fetchAuxData() from VerifyTrait which
+     * returns VerifiedAuxData[] with inclusion proof verification.
+     *
      * @param string $actor
      * @param string $auxDataType
      * @return AuxData[]
@@ -79,7 +91,7 @@ trait FetchTrait
      * @throws JsonException
      * @throws NetworkException
      */
-    public function fetchAuxData(string $actor, string $auxDataType): array
+    public function fetchUnverifiedAuxData(string $actor, string $auxDataType): array
     {
         $typeValidator = $this->registry->lookup($auxDataType);
         $this->ensureHttpClientConfigured();

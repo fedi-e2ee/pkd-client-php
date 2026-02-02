@@ -48,6 +48,10 @@ jobs:
         run: |
           php-fuzzer fuzz --max-runs "$FUZZ_RUNS" fuzzing/FuzzUrlEncoding.php
           shopt -s nullglob; for f in crash-*.txt; do mv "$f" "${f/crash-/fuzzed-FuzzUrlEncoding-}"; done
+      - name: Run FuzzPsr7
+        run: |
+          php-fuzzer fuzz --max-runs "$FUZZ_RUNS" fuzzing/FuzzPsr7.php
+          shopt -s nullglob; for f in crash-*.txt; do mv "$f" "${f/crash-/fuzzed-FuzzPsr7-}"; done
       - name: Check for crashes
         if: always()
         run: |

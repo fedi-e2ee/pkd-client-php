@@ -5,6 +5,7 @@ namespace FediE2EE\PKD;
 use FediE2EE\PKD\Crypto\PublicKey;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\Features\FetchTrait;
+use FediE2EE\PKD\Features\VerifyTrait;
 use function is_null;
 
 /**
@@ -14,6 +15,7 @@ use function is_null;
 final class ReadOnlyClient extends AbstractClient
 {
     use FetchTrait;
+    use VerifyTrait;
 
     public function __construct(
         string $url,

@@ -2,8 +2,12 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\IntegrationTests;
 
+use FediE2EE\PKD\Crypto\Exceptions\CryptoException;
+use FediE2EE\PKD\Crypto\Exceptions\NotImplementedException;
+use FediE2EE\PKD\Crypto\Merkle\Tree;
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\EndUserClient;
+use FediE2EE\PKD\Exceptions\ClientException;
 use FediE2EE\PKD\Extensions\ExtensionInterface;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\ReadOnlyClient;
@@ -18,6 +22,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use SodiumException;
 use function array_filter;
 use function array_map;
 use function count;
@@ -394,5 +399,188 @@ class VectorsTest extends TestCase
         }
 
         $this->assertTrue(true);
+    }
+
+    public static function hashFuncsProvider(): array
+    {
+        return [
+            ['blake2b'],
+            ['sha256'],
+            ['sha384'],
+            ['sha512'],
+        ];
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testClientVerifyInclusionProofWithFreshTree(): void
+    {
+        $hashFunc = 'sha256';
+        $serverKey = SecretKey::generate();
+        $serverPk = $serverKey->getPublicKey();
+
+        // Create client
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['test-leaf-1', 'test-leaf-2', 'test-leaf-3', 'test-leaf-4'];
+        $tree = new Tree($leaves, $hashFunc);
+
+        $merkleRoot = $tree->getEncodedRoot();
+        $proof = $tree->getInclusionProof('test-leaf-1');
+
+        $result = $client->verifyInclusionProof(
+            $hashFunc,
+            $merkleRoot,
+            'test-leaf-1',
+            $proof,
+            $tree->getSize()
+        );
+
+        $this->assertTrue($result, 'Inclusion proof verification should succeed');
+
+        $result = $client->verifyInclusionProof(
+            $hashFunc,
+            $merkleRoot,
+            'wrong-leaf',
+            $proof,
+            $tree->getSize()
+        );
+
+        $this->assertFalse($result, 'Inclusion proof verification should fail for wrong leaf');
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testInclusionProofVerificationWithVariousTreeSizes(): void
+    {
+        $serverKey = SecretKey::generate();
+        $serverPk = $serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        // Test with power-of-2 sizes and non-power-of-2 sizes
+        $treeSizes = [1, 2, 3, 4, 5, 7, 8, 15, 16, 17, 31, 32, 33];
+
+        foreach ($treeSizes as $size) {
+            $leaves = [];
+            for ($i = 0; $i < $size; $i++) {
+                $leaves[] = "leaf-{$i}";
+            }
+
+            $tree = new Tree($leaves, 'sha256');
+            $merkleRoot = $tree->getEncodedRoot();
+
+            // Verify proof for first leaf
+            $proof = $tree->getInclusionProof('leaf-0');
+            $result = $client->verifyInclusionProof(
+                'sha256',
+                $merkleRoot,
+                'leaf-0',
+                $proof,
+                $tree->getSize()
+            );
+
+            $this->assertTrue($result, "Proof verification failed for first leaf in tree of size {$size}");
+
+            // Verify proof for last leaf
+            $lastLeaf = "leaf-" . ($size - 1);
+            $proof = $tree->getInclusionProof($lastLeaf);
+            $result = $client->verifyInclusionProof(
+                'sha256',
+                $merkleRoot,
+                $lastLeaf,
+                $proof,
+                $tree->getSize()
+            );
+
+            $this->assertTrue($result, "Proof verification failed for last leaf in tree of size {$size}");
+        }
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testMerkleRootFromVectorsIsDecodable(): void
+    {
+        $vectors = self::loadTestVectors();
+
+        foreach ($vectors['test-cases'] as $testCase) {
+            $finalMapping = $testCase['final-mapping'] ?? [];
+            $merkleTree = $finalMapping['merkle-tree'] ?? [];
+            $expectedRoot = $merkleTree['root'] ?? null;
+
+            if ($expectedRoot === null) {
+                continue;
+            }
+
+            // Verify format
+            $this->assertStringStartsWith(
+                'pkd-mr-v1:',
+                $expectedRoot,
+                "Merkle root should have prefix in {$testCase['name']}"
+            );
+
+            // Verify it's decodable
+            $encoded = substr($expectedRoot, strlen('pkd-mr-v1:'));
+            $decoded = Base64UrlSafe::decodeNoPadding($encoded);
+
+            $this->assertSame(
+                32,
+                strlen($decoded),
+                "Merkle root should decode to 32 bytes in {$testCase['name']}"
+            );
+        }
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testMerkleRootTransitionsInVectors(): void
+    {
+        $vectors = self::loadTestVectors();
+
+        foreach ($vectors['test-cases'] as $testCase) {
+            $steps = $testCase['steps'] ?? [];
+
+            for ($i = 0; $i < count($steps); $i++) {
+                $step = $steps[$i];
+                $rootBefore = $step['merkle-root-before'];
+                $rootAfter = $step['merkle-root-after'];
+                $expectFail = $step['expect-fail'] ?? false;
+
+                // Both roots should be valid format
+                $this->assertStringStartsWith('pkd-mr-v1:', $rootBefore);
+                $this->assertStringStartsWith('pkd-mr-v1:', $rootAfter);
+
+                if ($expectFail) {
+                    // Failed operations should not change the root
+                    $this->assertSame(
+                        $rootBefore,
+                        $rootAfter,
+                        "Failed step should not change Merkle root in {$testCase['name']} step {$i}"
+                    );
+                } else {
+                    $this->assertSame(
+                        32,
+                        strlen(Base64UrlSafe::decodeNoPadding(substr($rootAfter, strlen('pkd-mr-v1:')))),
+                        "New Merkle root should be 32 bytes in {$testCase['name']} step {$i}"
+                    );
+                }
+
+                // Verify continuity: next step's before should match this step's after
+                if ($i < count($steps) - 1) {
+                    $nextStep = $steps[$i + 1];
+                    $this->assertSame(
+                        $rootAfter,
+                        $nextStep['merkle-root-before'],
+                        "Merkle root chain broken between steps {$i} and " . ($i + 1) . " in {$testCase['name']}"
+                    );
+                }
+            }
+        }
     }
 }

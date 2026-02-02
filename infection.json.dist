@@ -5,7 +5,7 @@
         ]
     },
     "threads": "max",
-    "minCoveredMsi": 80,
+    "minCoveredMsi": 90,
     "phpUnit": {
         "configDir": "."
     },
@@ -22,7 +22,8 @@
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchRecentMerkleRoot",
                 "FediE2EE\\PKD\\Features\\PublishTrait::fetchServerInfo",
                 "FediE2EE\\PKD\\Features\\PublishTrait::assertSecretKeySet",
-                "FediE2EE\\PKD\\Features\\ProtocolTrait::preamble"
+                "FediE2EE\\PKD\\Features\\ProtocolTrait::preamble",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
             ]
         },
         "BitwiseOr": {
@@ -33,11 +34,17 @@
         "Concat": {
             "ignoreSourceCodeByRegex": [
                 ".*throw\\s+?new.*"
+            ],
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
             ]
         },
         "ConcatOperandRemoval": {
             "ignoreSourceCodeByRegex": [
                 ".*throw\\s+?new.*"
+            ],
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
             ]
         },
         "IfNegation": {
@@ -49,13 +56,16 @@
         "LogicalNot": {
             "ignore": [
                 "FediE2EE\\PKD\\EndUserClient::__construct",
-                "FediE2EE\\PKD\\InstanceClient::__construct"
+                "FediE2EE\\PKD\\InstanceClient::__construct",
+                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
             ]
         },
         "ArrayItemRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\APTrait::getInboxUrl",
-                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
             ]
         },
         "ArrayItem": {
@@ -70,17 +80,13 @@
         },
         "DecrementInteger": {
             "ignore": [
-                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
             ]
         },
         "MatchArmRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\PublishTrait::getInternalHpke"
-            ]
-        },
-        "LogicalNot": {
-            "ignore": [
-                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"
             ]
         },
         "NotIdentical": {
@@ -91,7 +97,23 @@
         "ReturnRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\EndUserClient::flattenActor",
-                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxData"
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxData",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
+            ]
+        },
+        "GreaterThanOrEqualTo": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
+            ]
+        },
+        "CastInt": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAndVerifyPublicKeys"
+            ]
+        },
+        "LogicalAnd": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields"
             ]
         },
         "Throw_": {

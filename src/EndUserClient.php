@@ -17,7 +17,8 @@ use FediE2EE\PKD\Crypto\Exceptions\{
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\Features\{
     FetchTrait,
-    ProtocolTrait
+    ProtocolTrait,
+    VerifyTrait
 };
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
@@ -32,6 +33,7 @@ final class EndUserClient extends AbstractClient
 {
     use FetchTrait;
     use ProtocolTrait;
+    use VerifyTrait;
 
     protected ?SecretKey $sk = null;
     protected ?string $actor = null;

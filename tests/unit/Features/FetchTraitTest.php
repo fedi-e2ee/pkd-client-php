@@ -453,4 +453,38 @@ class FetchTraitTest extends TestCase
         $result = $this->fetchAuxDataByID('bob@example.com', 'aux-001');
         $this->assertNull($result);
     }
+
+    public function testFetchAuxDataReturnsEmptyArrayWhenNoMatchingTypes(): void
+    {
+        $actorUrl = 'https://example.com/users/bob';
+
+        // Register an extension for 'wanted-type'
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'wanted-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $this->registry->addAuxDataType($testExtension);
+
+        $webFingerResponse = TestHelper::createWebFingerResponse('bob', 'example.com', $actorUrl);
+
+        // Response has aux data, but of a DIFFERENT type than we're looking for
+        $auxInfoResponse = TestHelper::createAuxInfoResponse(
+            $this->serverKey,
+            $actorUrl,
+            [
+                ['aux-id' => 'aux-001', 'aux-type' => 'other-type'],
+                ['aux-id' => 'aux-002', 'aux-type' => 'another-type']
+            ]
+        );
+
+        $this->httpClient = $this->createMockClient([$webFingerResponse, $auxInfoResponse]);
+
+        // Should return empty array because no aux entries match 'wanted-type'
+        $result = $this->fetchAuxData('bob@example.com', 'wanted-type');
+
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
 }

@@ -169,6 +169,32 @@ final class EndUserClient extends AbstractClient
     }
 
     /**
+     * Revoke auxiliary data for an actor.
+     *
+     * At least one of $data or $auxDataId must be provided.
+     *
+     * @api
+     * @throws ClientException
+     * @throws Crypto\Exceptions\CryptoException
+     * @throws Crypto\Exceptions\HttpSignatureException
+     * @throws Crypto\Exceptions\JsonException
+     * @throws Crypto\Exceptions\NetworkException
+     * @throws Crypto\Exceptions\NotImplementedException
+     * @throws GuzzleException
+     * @throws SodiumException
+     */
+    public function revokeAuxData(
+        string $type,
+        ?string $data = null,
+        ?string $auxDataId = null,
+        ?string $actor = null
+    ): string {
+        return $this->encryptBundle(
+            $this->createRevokeAuxData($this->flattenActor($actor), $type, $data, $auxDataId)
+        );
+    }
+
+    /**
      * @throws ClientException
      */
     protected function flattenActor(?string $actor): string

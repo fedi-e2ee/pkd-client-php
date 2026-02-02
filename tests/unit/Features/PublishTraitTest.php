@@ -214,7 +214,6 @@ class PublishTraitTest extends TestCase
         };
 
         $method = new ReflectionMethod($testObj, 'assertSecretKeySet');
-        $method->setAccessible(true);
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('The secret key must be set');

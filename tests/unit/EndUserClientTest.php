@@ -83,6 +83,7 @@ class EndUserClientTest extends TestCase
         $this->assertTrue(method_exists($client, 'addAuxData'));
         $this->assertTrue(method_exists($client, 'revokeKey'));
         $this->assertTrue(method_exists($client, 'revokeKeyThirdParty'));
+        $this->assertTrue(method_exists($client, 'revokeAuxData'));
         $this->assertTrue(method_exists($client, 'moveIdentity'));
         $this->assertTrue(method_exists($client, 'burnDown'));
         $this->assertTrue(method_exists($client, 'fireproof'));
@@ -113,7 +114,6 @@ class EndUserClientTest extends TestCase
         // Use reflection to verify the secret key was stored
         $reflection = new \ReflectionClass($client);
         $skProperty = $reflection->getProperty('sk');
-        $skProperty->setAccessible(true);
 
         $this->assertSame($sk, $skProperty->getValue($client));
     }
@@ -128,7 +128,6 @@ class EndUserClientTest extends TestCase
         // Use reflection to verify the secret key is null
         $reflection = new \ReflectionClass($client);
         $skProperty = $reflection->getProperty('sk');
-        $skProperty->setAccessible(true);
 
         $this->assertNull($skProperty->getValue($client));
     }
@@ -144,7 +143,6 @@ class EndUserClientTest extends TestCase
         // Use reflection to verify the actor was stored
         $reflection = new \ReflectionClass($client);
         $actorProperty = $reflection->getProperty('actor');
-        $actorProperty->setAccessible(true);
 
         $this->assertSame($actor, $actorProperty->getValue($client));
     }

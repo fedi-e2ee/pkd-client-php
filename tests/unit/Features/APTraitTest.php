@@ -75,6 +75,84 @@ class APTraitTest extends TestCase
         $this->parseJsonResponse($response);
     }
 
+    public function testParseJsonResponseThrowsOnNonArrayJson(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/json'], '"just a string"');
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid JSON response: expected object or array');
+        $this->parseJsonResponse($response);
+    }
+
+    public function testParseJsonResponseThrowsOnMissingPkdContext(): void
+    {
+        $body = json_encode(['data' => 'test']);
+        $response = new Response(200, ['Content-Type' => 'application/json'], $body);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid PKD context for response.');
+        $this->parseJsonResponse($response, 'fedi-e2ee:v1/api/test');
+    }
+
+    public function testParseJsonResponseHandlesValidEmptyArray(): void
+    {
+        $body = json_encode([]);
+        $response = new Response(200, ['Content-Type' => 'application/json'], $body);
+
+        $result = $this->parseJsonResponse($response);
+
+        $this->assertSame([], $result);
+    }
+
+    public function testParseJsonResponseHandlesJsonNull(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/json'], 'null');
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid JSON response: expected object or array');
+        $this->parseJsonResponse($response);
+    }
+
+    public function testParseJsonResponseHandlesJsonFalse(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/json'], 'false');
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid JSON response: expected object or array');
+        $this->parseJsonResponse($response);
+    }
+
+    public function testParseJsonResponseHandlesJsonInteger(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/json'], '42');
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid JSON response: expected object or array');
+        $this->parseJsonResponse($response);
+    }
+
+    public function testParseJsonResponseWithoutExpectedContextSkipsValidation(): void
+    {
+        // When no expectedContext is provided, the !pkd-context check should be skipped
+        $body = json_encode(['data' => 'test']); // No !pkd-context key
+        $response = new Response(200, ['Content-Type' => 'application/json'], $body);
+
+        // Should NOT throw - context validation only happens when expectedContext is provided
+        $result = $this->parseJsonResponse($response, null);
+
+        $this->assertSame(['data' => 'test'], $result);
+    }
+
+    public function testParseJsonResponseWithTruncatedJson(): void
+    {
+        // Truncated JSON that will cause json_decode to return null WITH an error
+        $response = new Response(200, ['Content-Type' => 'application/json'], '{"key": "val');
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid JSON response');
+        $this->parseJsonResponse($response);
+    }
+
     public function testParseJsonResponseThrowsOnWrongContext(): void
     {
         $body = json_encode([

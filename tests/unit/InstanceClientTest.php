@@ -94,7 +94,6 @@ class InstanceClientTest extends TestCase
         // Use reflection to verify the secret key was stored
         $reflection = new \ReflectionClass($client);
         $skProperty = $reflection->getProperty('sk');
-        $skProperty->setAccessible(true);
 
         $this->assertSame($sk, $skProperty->getValue($client));
     }
@@ -109,7 +108,6 @@ class InstanceClientTest extends TestCase
         // Use reflection to verify the secret key is null
         $reflection = new \ReflectionClass($client);
         $skProperty = $reflection->getProperty('sk');
-        $skProperty->setAccessible(true);
 
         $this->assertNull($skProperty->getValue($client));
     }

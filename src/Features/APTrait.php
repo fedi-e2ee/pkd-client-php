@@ -103,10 +103,16 @@ trait APTrait
             throw new ClientException('Empty JSON response.');
         }
         $decoded = json_decode($body, true);
-        if (!$decoded) {
+        if (json_last_error() !== JSON_ERROR_NONE) {
             throw new ClientException('Invalid JSON response: ' . json_last_error_msg());
         }
-        if (!is_null($expectedContext)) {
+        if (!is_array($decoded)) {
+            throw new ClientException('Invalid JSON response: expected object or array');
+        }
+        if ($expectedContext !== null) {
+            if (!array_key_exists('!pkd-context', $decoded)) {
+                throw new ClientException('Invalid PKD context for response.');
+            }
             if (!hash_equals($expectedContext, $decoded['!pkd-context'])) {
                 throw new ClientException('Invalid PKD context for response.');
             }

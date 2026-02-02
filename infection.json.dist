@@ -16,8 +16,13 @@
         "MethodCallRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchPublicKeys",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxData",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxDataByID",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchRecentMerkleRoot",
                 "FediE2EE\\PKD\\Features\\PublishTrait::fetchServerInfo",
-                "FediE2EE\\PKD\\Features\\PublishTrait::assertSecretKeySet"
+                "FediE2EE\\PKD\\Features\\PublishTrait::assertSecretKeySet",
+                "FediE2EE\\PKD\\Features\\ProtocolTrait::preamble"
             ]
         },
         "BitwiseOr": {
@@ -58,6 +63,16 @@
                 "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
             ]
         },
+        "IncrementInteger": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
+            ]
+        },
+        "DecrementInteger": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
+            ]
+        },
         "MatchArmRemoval": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\PublishTrait::getInternalHpke"
@@ -66,6 +81,17 @@
         "LogicalNot": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"
+            ]
+        },
+        "NotIdentical": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"
+            ]
+        },
+        "ReturnRemoval": {
+            "ignore": [
+                "FediE2EE\\PKD\\EndUserClient::flattenActor",
+                "FediE2EE\\PKD\\Features\\FetchTrait::fetchAuxData"
             ]
         },
         "Throw_": {

@@ -594,4 +594,35 @@ class PublishTraitTest extends TestCase
         $result = $this->getInternalHpke('Curve25519_sha256_ChaChaPoly', $pk);
         $this->assertInstanceOf(ServerHPKE::class, $result);
     }
+
+    /**
+     * @throws ClientException
+     * @throws ClientExceptionInterface
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testPublishStringThrowsWhenHttpClientNull(): void
+    {
+        $this->httpClient = null;
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('The http client is not injected');
+        $this->publishString($this->sk, '{"test":true}');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws ClientExceptionInterface
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testPublishStringThrowsWhenServerActorInboxNull(): void
+    {
+        $this->httpClient = $this->createMockClient([]);
+        $this->serverActorInbox = null;
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('The actor inbox URL is not set');
+        $this->publishString($this->sk, '{"test":true}');
+    }
 }

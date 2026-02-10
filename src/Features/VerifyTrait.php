@@ -172,9 +172,15 @@ trait VerifyTrait
         if (!is_array($body['public-keys'])) {
             throw new ClientException('Invalid public-keys format');
         }
+        if (!is_int($body['tree-size']) && !is_string($body['tree-size'])) {
+            throw new ClientException('Invalid tree-size format');
+        }
 
         $merkleRoot = $body['merkle-root'];
         $treeSize = (int) $body['tree-size'];
+        if ($treeSize < 1) {
+            throw new ClientException('Invalid tree-size: must be positive');
+        }
         $verifiedKeys = [];
 
         foreach ($body['public-keys'] as $row) {
@@ -253,9 +259,15 @@ trait VerifyTrait
         if (!is_array($body['auxiliary'])) {
             throw new ClientException('Invalid auxiliary format');
         }
+        if (!is_int($body['tree-size']) && !is_string($body['tree-size'])) {
+            throw new ClientException('Invalid tree-size format');
+        }
 
         $merkleRoot = $body['merkle-root'];
         $treeSize = (int) $body['tree-size'];
+        if ($treeSize < 1) {
+            throw new ClientException('Invalid tree-size: must be positive');
+        }
         $filter = $typeValidator->getAuxDataType();
         $verifiedAuxData = [];
 

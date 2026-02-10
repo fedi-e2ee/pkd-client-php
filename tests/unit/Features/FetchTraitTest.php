@@ -2,10 +2,15 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\Tests\Features;
 
+use FediE2EE\PKD\Crypto\Exceptions\HttpSignatureException;
+use FediE2EE\PKD\Crypto\Exceptions\JsonException;
+use FediE2EE\PKD\Crypto\Exceptions\NetworkException;
+use FediE2EE\PKD\Crypto\Exceptions\NotImplementedException;
 use FediE2EE\PKD\Crypto\PublicKey;
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\EndUserClient;
 use FediE2EE\PKD\Exceptions\ClientException;
+use FediE2EE\PKD\Extensions\ExtensionException;
 use FediE2EE\PKD\Extensions\ExtensionInterface;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\Features\FetchTrait;
@@ -13,6 +18,7 @@ use FediE2EE\PKD\ReadOnlyClient;
 use FediE2EE\PKD\Tests\TestHelper;
 use FediE2EE\PKD\Values\AuxData;
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -21,6 +27,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
+use SodiumException;
 
 #[CoversClass(ReadOnlyClient::class)]
 #[CoversClass(EndUserClient::class)]
@@ -63,6 +70,15 @@ class FetchTraitTest extends TestCase
         return new HttpClient(['handler' => $handlerStack]);
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchPublicKeysBuildsCorrectUrl(): void
     {
         $history = [];
@@ -90,6 +106,15 @@ class FetchTraitTest extends TestCase
         $this->assertSame($expectedUrl, (string) $keysRequest->getUri());
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchPublicKeysVerifiesHttpSignature(): void
     {
         $actorUrl = 'https://example.com/users/alice';
@@ -111,6 +136,15 @@ class FetchTraitTest extends TestCase
         $this->fetchUnverifiedPublicKeys('alice@example.com');
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchPublicKeysAssertRequiredKeys(): void
     {
         $actorUrl = 'https://example.com/users/alice';
@@ -130,6 +164,15 @@ class FetchTraitTest extends TestCase
         $this->fetchUnverifiedPublicKeys('alice@example.com');
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchPublicKeysSetsMetadata(): void
     {
         $actorUrl = 'https://example.com/users/alice';
@@ -160,6 +203,15 @@ class FetchTraitTest extends TestCase
         $this->assertArrayNotHasKey('public-key', $metadata);
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchPublicKeysThrowsOnNon200(): void
     {
         $actorUrl = 'https://example.com/users/alice';
@@ -176,6 +228,13 @@ class FetchTraitTest extends TestCase
         $this->fetchUnverifiedPublicKeys('alice@example.com');
     }
 
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataBuildsCorrectUrl(): void
     {
         $history = [];
@@ -223,6 +282,13 @@ class FetchTraitTest extends TestCase
         $this->assertSame($expectedAuxDataUrl, (string) $auxDataRequest->getUri());
     }
 
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataSkipsMalformedEntries(): void
     {
         $actorUrl = 'https://example.com/users/bob';
@@ -267,6 +333,13 @@ class FetchTraitTest extends TestCase
         $this->assertSame('valid-data', $result[0]->data);
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchRecentMerkleRootBuildsCorrectUrl(): void
     {
         $history = [];
@@ -288,6 +361,13 @@ class FetchTraitTest extends TestCase
         $this->assertSame($this->url . '/api/history', (string) $request->getUri());
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
     public function testFetchRecentMerkleRootVerifiesSignature(): void
     {
         // Unsigned response
@@ -305,6 +385,13 @@ class FetchTraitTest extends TestCase
         $this->fetchRecentMerkleRoot();
     }
 
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataThrowsWhenAuxiliaryKeyMissing(): void
     {
         $actorUrl = 'https://example.com/users/bob';
@@ -332,6 +419,13 @@ class FetchTraitTest extends TestCase
         $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
     }
 
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataReturnsMultipleItems(): void
     {
         $actorUrl = 'https://example.com/users/bob';
@@ -397,6 +491,12 @@ class FetchTraitTest extends TestCase
         $this->assertSame('data-three', $result[2]->data);
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataByIdVerifiesSignature(): void
     {
         $actorUrl = 'https://example.com/users/bob';
@@ -422,6 +522,13 @@ class FetchTraitTest extends TestCase
         $this->fetchAuxDataByID('bob@example.com', 'aux-001');
     }
 
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataByIdSkipsResponseMissingRequiredKeys(): void
     {
         $actorUrl = 'https://example.com/users/bob';
@@ -454,6 +561,13 @@ class FetchTraitTest extends TestCase
         $this->assertNull($result);
     }
 
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
     public function testFetchAuxDataReturnsEmptyArrayWhenNoMatchingTypes(): void
     {
         $actorUrl = 'https://example.com/users/bob';
@@ -487,4 +601,206 @@ class FetchTraitTest extends TestCase
         $this->assertEmpty($result);
     }
 
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnNonArrayPublicKeys(): void
+    {
+        $actorUrl = 'https://example.com/users/alice';
+        $webFingerResponse = TestHelper::createWebFingerResponse('alice', 'example.com', $actorUrl);
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => 'not-an-array'
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $this->httpClient = $this->createMockClient([$webFingerResponse, $keysResponse]);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid public-keys format');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnMalformedKeyEntry(): void
+    {
+        $actorUrl = 'https://example.com/users/alice';
+        $webFingerResponse = TestHelper::createWebFingerResponse('alice', 'example.com', $actorUrl);
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [
+                    'not-an-array-row'
+                ]
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $this->httpClient = $this->createMockClient([$webFingerResponse, $keysResponse]);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid public key entry');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws JsonException
+     * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnMissingPublicKeyField(): void
+    {
+        $actorUrl = 'https://example.com/users/alice';
+        $webFingerResponse = TestHelper::createWebFingerResponse('alice', 'example.com', $actorUrl);
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [
+                    ['key-id' => 'key-001']  // Missing 'public-key'
+                ]
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $this->httpClient = $this->createMockClient([$webFingerResponse, $keysResponse]);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid public key entry');
+        $this->fetchUnverifiedPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
+    public function testFetchAuxDataThrowsOnNonArrayAuxiliary(): void
+    {
+        $actorUrl = 'https://example.com/users/bob';
+
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'test-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $this->registry->addAuxDataType($testExtension);
+
+        $webFingerResponse = TestHelper::createWebFingerResponse('bob', 'example.com', $actorUrl);
+
+        $auxInfoResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'auxiliary' => 'not-an-array'
+            ],
+            'fedi-e2ee:v1/api/actor/aux-info'
+        );
+
+        $this->httpClient = $this->createMockClient([$webFingerResponse, $auxInfoResponse]);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid auxiliary format');
+        $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
+    public function testFetchAuxDataThrowsOnNon200WithCorrectMessage(): void
+    {
+        $actorUrl = 'https://example.com/users/bob';
+
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'test-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $this->registry->addAuxDataType($testExtension);
+
+        $webFingerResponse = TestHelper::createWebFingerResponse('bob', 'example.com', $actorUrl);
+        $errorResponse = new Response(404, [], '');
+
+        $mock = new MockHandler([$webFingerResponse, $errorResponse]);
+        $handlerStack = HandlerStack::create($mock);
+        $this->httpClient = new HttpClient(['handler' => $handlerStack, 'http_errors' => false]);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Could not retrieve auxiliary data');
+        $this->fetchUnverifiedAuxData('bob@example.com', 'test-type');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws HttpSignatureException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchMerkleRootThrowsOnNonStringRoot(): void
+    {
+        $merkleResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            ['merkle-root' => 12345],
+            'fedi-e2ee:v1/api/history'
+        );
+
+        $this->httpClient = $this->createMockClient([$merkleResponse]);
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid merkle-root format');
+        $this->fetchRecentMerkleRoot();
+    }
+
+    /**
+     * @throws ClientException
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws NetworkException
+     */
+    public function testFetchAuxDataInternalReturnsNullOnNon200(): void
+    {
+        $actorUrl = 'https://example.com/users/bob';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse('bob', 'example.com', $actorUrl);
+        $notFoundResponse = new Response(404, [], '');
+
+        $mock = new MockHandler([$webFingerResponse, $notFoundResponse]);
+        $handlerStack = HandlerStack::create($mock);
+        $this->httpClient = new HttpClient(['handler' => $handlerStack, 'http_errors' => false]);
+
+        $result = $this->fetchAuxDataByID('bob@example.com', 'nonexistent-id');
+        $this->assertNull($result);
+    }
 }

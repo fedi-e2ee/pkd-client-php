@@ -14,7 +14,6 @@ use FediE2EE\PKD\Crypto\Exceptions\{
 };
 use GuzzleHttp\Exception\GuzzleException;
 use SodiumException;
-use Throwable;
 use function is_array, is_null, is_string, urlencode;
 
 /**
@@ -105,7 +104,7 @@ trait FetchTrait
             $this->url . '/api/actor/' . urlencode($canonical) . '/auxiliary'
         );
         if ($auxDataListResponse->getStatusCode() !== 200) {
-            throw new ClientException('Could not retrieve public keys.');
+            throw new ClientException('Could not retrieve auxiliary data.');
         }
         $body = $this->parseJsonResponse($auxDataListResponse, 'fedi-e2ee:v1/api/actor/aux-info');
         $this->assertKeysExist($body, ['auxiliary']);
@@ -194,7 +193,7 @@ trait FetchTrait
             $body = $this->parseJsonResponse($auxDataResponse, 'fedi-e2ee:v1/api/actor/get-aux');
             $this->assertKeysExist($body, ['aux-id', 'aux-type', 'aux-data', 'actor-id']);
             $typeValidator = $this->registry->lookup($body['aux-type']);
-        } catch (Throwable) {
+        } catch (ClientException | ExtensionException) {
             return null;
         }
         if (!$typeValidator->isValid($body['aux-data'])) {

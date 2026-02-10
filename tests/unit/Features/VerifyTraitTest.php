@@ -8,6 +8,7 @@ use FediE2EE\PKD\Crypto\Merkle\InclusionProof;
 use FediE2EE\PKD\Crypto\Merkle\Tree;
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\Exceptions\ClientException;
+use FediE2EE\PKD\Extensions\ExtensionException;
 use FediE2EE\PKD\Extensions\ExtensionInterface;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\ReadOnlyClient;
@@ -1155,5 +1156,377 @@ class VerifyTraitTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertTrue($result[0]->verified);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnNonStringMerkleRoot(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [],
+                'merkle-root' => 12345,
+                'tree-size' => 1
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid merkle-root format');
+
+        $client->fetchPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnNonArrayPublicKeys(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => 'not-an-array',
+                'merkle-root' => 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(str_repeat("\x00", 32)),
+                'tree-size' => 1
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid public-keys format');
+
+        $client->fetchPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws RandomException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnFailedInclusionProof(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $actorUrl = 'https://example.com/users/alice';
+        $key = SecretKey::generate()->getPublicKey();
+
+        // Build a tree and get a valid proof
+        $leaf = 'test-leaf';
+        $tree = new Tree([$leaf, 'pad'], 'sha256');
+        $proof = $tree->getInclusionProof($leaf);
+
+        // Use a wrong Merkle root so proof verification fails
+        $wrongRoot = 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(
+            random_bytes(32)
+        );
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [[
+                    'public-key' => $key->toString(),
+                    'inclusion-proof' => array_map(
+                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                        $proof->proof
+                    ),
+                    'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
+                    'leaf-index' => $proof->index,
+                ]],
+                'merkle-root' => $wrongRoot,
+                'tree-size' => $tree->getSize(),
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Inclusion proof verification failed for public key');
+
+        $client->fetchPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchAuxDataThrowsOnNonStringMerkleRoot(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'test-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $registry = new Registry();
+        $registry->addAuxDataType($testExtension);
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk, $registry);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $auxInfoResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'auxiliary' => [],
+                'merkle-root' => 12345,
+                'tree-size' => 1
+            ],
+            'fedi-e2ee:v1/api/actor/aux-info'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxInfoResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid merkle-root format');
+
+        $client->fetchAuxData('alice@example.com', 'test-type');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchAuxDataThrowsOnNonArrayAuxiliary(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'test-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $registry = new Registry();
+        $registry->addAuxDataType($testExtension);
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk, $registry);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $auxInfoResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'auxiliary' => 'not-an-array',
+                'merkle-root' => 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(str_repeat("\x00", 32)),
+                'tree-size' => 1
+            ],
+            'fedi-e2ee:v1/api/actor/aux-info'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxInfoResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid auxiliary format');
+
+        $client->fetchAuxData('alice@example.com', 'test-type');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws ExtensionException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchAuxDataTreeSizeCoercion(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'test-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $registry = new Registry();
+        $registry->addAuxDataType($testExtension);
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk, $registry);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $auxLeaf = 'coercion-aux-leaf';
+        $leaves = [$auxLeaf, 'pad'];
+        $tree = new Tree($leaves, 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+        $proof = $tree->getInclusionProof($auxLeaf);
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        // tree-size as string instead of int
+        $auxInfoResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'auxiliary' => [[
+                    'aux-id' => 'aux-001',
+                    'aux-type' => 'test-type',
+                    'aux-data' => 'test-payload',
+                    'actor-id' => $actorUrl,
+                    'inclusion-proof' => array_map(
+                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        $proof->proof
+                    ),
+                    'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
+                    'leaf-index' => $proof->index
+                ]],
+                'merkle-root' => $merkleRoot,
+                'tree-size' => (string) $tree->getSize()
+            ],
+            'fedi-e2ee:v1/api/actor/aux-info'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxInfoResponse]));
+
+        $result = $client->fetchAuxData('alice@example.com', 'test-type');
+
+        $this->assertCount(1, $result);
+        $this->assertTrue($result[0]->verified);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysThrowsOnNonNumericTreeSize(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [],
+                'merkle-root' => 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(str_repeat("\x00", 32)),
+                'tree-size' => 'not-a-number'
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid tree-size: must be positive');
+
+        $client->fetchPublicKeys('alice@example.com');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws ExtensionException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchAuxDataThrowsOnNonNumericTreeSize(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+
+        $testExtension = new class implements ExtensionInterface {
+            public function getAuxDataType(): string { return 'test-type'; }
+            public function getRejectionReason(): string { return 'Invalid'; }
+            public function isValid(string $auxData): bool { return true; }
+        };
+        $registry = new Registry();
+        $registry->addAuxDataType($testExtension);
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk, $registry);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $auxInfoResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'auxiliary' => [],
+                'merkle-root' => 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(str_repeat("\x00", 32)),
+                'tree-size' => 'not-a-number'
+            ],
+            'fedi-e2ee:v1/api/actor/aux-info'
+        );
+
+        $client->setHttpClient($this->createMockClient([$webFingerResponse, $auxInfoResponse]));
+
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Invalid tree-size: must be positive');
+
+        $client->fetchAuxData('alice@example.com', 'test-type');
     }
 }

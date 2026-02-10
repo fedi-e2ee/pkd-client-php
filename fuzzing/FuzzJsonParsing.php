@@ -2,94 +2,67 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\Fuzzing;
 
+use FediE2EE\PKD\Crypto\PublicKey;
+use FediE2EE\PKD\Exceptions\ClientException;
+use FediE2EE\PKD\Features\APTrait;
+use GuzzleHttp\Psr7\Response;
 use PhpFuzzer\Config;
-use TypeError;
-use function array_key_exists;
-use function hash_equals;
-use function is_array;
-use function is_null;
-use function is_object;
-use function is_string;
-use function json_decode;
-use function json_encode;
-use function json_last_error_msg;
-use function property_exists;
 
 /** @var Config $config */
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-$config->setTarget(function (string $input): void {
-    $decoded = json_decode($input, true);
-    if (is_array($decoded)) {
-        $requiredKeys = ['actor-id', 'public-keys', 'inbox', '!pkd-context'];
-        foreach ($requiredKeys as $key) {
-            array_key_exists($key, $decoded);
-        }
-        if (array_key_exists('!pkd-context', $decoded) && is_string($decoded['!pkd-context'])) {
-            $contexts = [
-                'fedi-e2ee:v1/api/actor/get-keys',
-                'fedi-e2ee:v1/api/actor/aux-info',
-                'fedi-e2ee:v1/api/actor/get-aux',
-                'fedi-e2ee:v1/api/history',
-                'fedi-e2ee:v1/api/info',
-                'fedi-e2ee:v1/api/server-public-key',
-            ];
-            foreach ($contexts as $context) {
-                hash_equals($context, $decoded['!pkd-context']);
-            }
-        }
-        if (array_key_exists('public-keys', $decoded) && is_array($decoded['public-keys'])) {
-            foreach ($decoded['public-keys'] as $row) {
-                if (is_array($row)) {
-                    // Simulate PublicKey::fromString usage
-                    if (array_key_exists('public-key', $row) && is_string($row['public-key'])) {
-                        $meta = $row;
-                        unset($meta['public-key']);
-                    }
-                }
-            }
-        }
-        if (array_key_exists('auxiliary', $decoded) && is_array($decoded['auxiliary'])) {
-            foreach ($decoded['auxiliary'] as $aux) {
-                if (is_array($aux)) {
-                    array_key_exists('aux-id', $aux);
-                    array_key_exists('aux-type', $aux);
-                }
-            }
-        }
+/**
+ * Minimal harness that exposes the real APTrait parsing methods.
+ *
+ * @internal
+ */
+$harness = new class {
+    use APTrait;
 
-        if (array_key_exists('hpke-ciphersuite', $decoded) && is_string($decoded['hpke-ciphersuite'])) {
-            // The ciphersuite is parsed with explode('_', ...)
-            $parts = explode('_', $decoded['hpke-ciphersuite']);
-            if (count($parts) === 3) {
-                [$curve, $hash, $aead] = $parts;
-            }
-        }
+    public PublicKey $pk;
+
+    public function __construct()
+    {
+        // Dummy key; never used for signing verification in this target.
+        $this->pk = PublicKey::fromString(
+            'ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        );
+    }
+};
+
+$contexts = [
+    'fedi-e2ee:v1/api/actor/get-keys',
+    'fedi-e2ee:v1/api/actor/aux-info',
+    'fedi-e2ee:v1/api/actor/get-aux',
+    'fedi-e2ee:v1/api/history',
+    'fedi-e2ee:v1/api/info',
+    'fedi-e2ee:v1/api/server-public-key',
+];
+
+$config->setTarget(function (string $input) use ($harness, $contexts): void {
+    $response = new Response(200, ['Content-Type' => 'application/json'], $input);
+
+    // Exercise parseJsonResponse without context check
+    try {
+        $parsed = $harness->parseJsonResponse($response);
+        // Exercise assertKeysExist on the parsed body
+        $harness->assertKeysExist($parsed, ['actor-id', 'public-keys']);
+    } catch (ClientException) {
+        // Expected for invalid JSON
     }
 
-    $decodedObj = json_decode($input, false);
-    if (is_object($decodedObj)) {
-        if (property_exists($decodedObj, 'links') && is_array($decodedObj->links)) {
-            foreach ($decodedObj->links as $link) {
-                if (is_object($link)) {
-                    property_exists($link, 'rel');
-                    property_exists($link, 'href');
-                    property_exists($link, 'type');
-                }
-            }
+    // Exercise parseJsonResponse with each known context
+    foreach ($contexts as $context) {
+        $response = new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            $input
+        );
+        try {
+            $harness->parseJsonResponse($response, $context);
+        } catch (ClientException) {
+            // Expected for invalid JSON or wrong context
         }
-
-        if (property_exists($decodedObj, 'id') && !is_null($decodedObj->id)) {
-            $decodedObj->id;
-        }
-        if (property_exists($decodedObj, 'inbox') && !is_null($decodedObj->inbox)) {
-            $decodedObj->inbox;
-        }
-    }
-
-    $nested = json_decode($input, true, 32); // Limit depth
-    if (is_array($nested)) {
-        json_encode($nested, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
     }
 });

@@ -20,9 +20,6 @@
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxData",
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxDataByID",
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchRecentMerkleRoot",
-                "FediE2EE\\PKD\\Features\\PublishTrait::fetchServerInfo",
-                "FediE2EE\\PKD\\Features\\PublishTrait::assertSecretKeySet",
-                "FediE2EE\\PKD\\Features\\ProtocolTrait::preamble",
                 "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys",
                 "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAuxData"
             ]
@@ -58,9 +55,7 @@
             "ignore": [
                 "FediE2EE\\PKD\\EndUserClient::__construct",
                 "FediE2EE\\PKD\\InstanceClient::__construct",
-                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse",
-                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields",
-                "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredAuxDataProofFields"
+                "FediE2EE\\PKD\\Features\\APTrait::parseJsonResponse"
             ]
         },
         "ArrayItemRemoval": {
@@ -108,11 +103,7 @@
                 "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
             ]
         },
-        "CastInt": {
-            "ignore": [
-                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys"
-            ]
-        },
+        "CastInt": true,
         "LogicalAnd": {
             "ignore": [
                 "FediE2EE\\PKD\\Features\\VerifyTrait::hasRequiredProofFields",

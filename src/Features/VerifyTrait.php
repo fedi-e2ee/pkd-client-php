@@ -86,12 +86,7 @@ trait VerifyTrait
             return false;
         }
 
-        // Hash the leaf with domain separator
-        if ($hashFunction === 'blake2b') {
-            $node = sodium_crypto_generichash("\x00" . $leaf);
-        } else {
-            $node = hash($hashFunction, "\x00" . $leaf, true);
-        }
+        $node = $this->hashWithDomainSeparator($hashFunction, "\x00", $leaf);
 
         $fn = $proof->index;
         $sn = $treeSize - 1;
@@ -103,14 +98,18 @@ trait VerifyTrait
 
             if (($fn & 1) === 1 || $fn === $sn) {
                 // Node is right child or only child at this level
-                $node = hash('sha256', "\x01" . $sibling . $node, true);
+                $node = $this->hashWithDomainSeparator(
+                    $hashFunction, "\x01", $sibling . $node
+                );
                 while ((($fn & 1) === 0) && $fn !== 0) {
                     $fn >>= 1;
                     $sn >>= 1;
                 }
             } else {
                 // Node is left child
-                $node = hash('sha256', "\x01" . $node . $sibling, true);
+                $node = $this->hashWithDomainSeparator(
+                    $hashFunction, "\x01", $node . $sibling
+                );
             }
 
             $fn >>= 1;
@@ -118,6 +117,20 @@ trait VerifyTrait
         }
 
         return $sn === 0 && hash_equals($expectedRoot, $node);
+    }
+
+    /**
+     * @throws SodiumException
+     */
+    private function hashWithDomainSeparator(
+        string $hashFunction,
+        string $prefix,
+        string $data
+    ): string {
+        if ($hashFunction === 'blake2b') {
+            return sodium_crypto_generichash($prefix . $data);
+        }
+        return hash($hashFunction, $prefix . $data, true);
     }
 
     /**

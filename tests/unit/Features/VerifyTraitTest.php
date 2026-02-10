@@ -14,6 +14,7 @@ use FediE2EE\PKD\ReadOnlyClient;
 use FediE2EE\PKD\Tests\TestHelper;
 use FediE2EE\PKD\Values\AuxData;
 use FediE2EE\PKD\Values\VerifiedAuxData;
+use FediE2EE\PKD\Values\VerifiedPublicKey;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -26,6 +27,7 @@ use SodiumException;
 
 #[CoversClass(ReadOnlyClient::class)]
 #[CoversClass(VerifiedAuxData::class)]
+#[CoversClass(VerifiedPublicKey::class)]
 #[CoversClass(AuxData::class)]
 #[Group('unit')]
 class VerifyTraitTest extends TestCase
@@ -163,6 +165,172 @@ class VerifyTraitTest extends TestCase
             $tree->getSize()
         );
 
+        $this->assertFalse($result);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithIndexAtBoundary(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2', 'leaf3'];
+        $tree = new Tree($leaves, 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        // Index == treeSize should fail (>= check)
+        $proof = new InclusionProof($tree->getSize(), []);
+        $result = $client->verifyInclusionProof(
+            'sha256',
+            $merkleRoot,
+            'leaf1',
+            $proof,
+            $tree->getSize()
+        );
+        $this->assertFalse($result);
+
+        // Index == treeSize - 1 with a real proof should succeed
+        $proof = $tree->getInclusionProof('leaf3');
+        $result = $client->verifyInclusionProof(
+            'sha256',
+            $merkleRoot,
+            'leaf3',
+            $proof,
+            $tree->getSize()
+        );
+        $this->assertTrue($result);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofNonPowerOfTwoSizes(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        foreach ([3, 5, 7, 9] as $size) {
+            $leaves = [];
+            for ($i = 0; $i < $size; $i++) {
+                $leaves[] = "leaf-{$i}";
+            }
+            $tree = new Tree($leaves, 'sha256');
+            $merkleRoot = $tree->getEncodedRoot();
+
+            // Verify first, middle, and last leaf
+            $positions = [0, intdiv($size, 2), $size - 1];
+            foreach ($positions as $pos) {
+                $leaf = "leaf-{$pos}";
+                $proof = $tree->getInclusionProof($leaf);
+                $result = $client->verifyInclusionProof(
+                    'sha256',
+                    $merkleRoot,
+                    $leaf,
+                    $proof,
+                    $tree->getSize()
+                );
+                $this->assertTrue(
+                    $result,
+                    "Failed for leaf-{$pos} in {$size}-leaf tree"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithExtraSiblings(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+        $proof = $tree->getInclusionProof('leaf1');
+
+        // Add an extra bogus sibling to the proof
+        $tampered = new InclusionProof(
+            $proof->index,
+            array_merge($proof->proof, [str_repeat("\x00", 32)])
+        );
+
+        $result = $client->verifyInclusionProof(
+            'sha256',
+            $merkleRoot,
+            'leaf1',
+            $tampered,
+            $tree->getSize()
+        );
+        $this->assertFalse($result);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithTruncatedProof(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+        $proof = $tree->getInclusionProof('leaf1');
+
+        // Remove the last sibling from the proof
+        $truncatedNodes = array_slice($proof->proof, 0, -1);
+        $truncated = new InclusionProof($proof->index, $truncatedNodes);
+
+        $result = $client->verifyInclusionProof(
+            'sha256',
+            $merkleRoot,
+            'leaf1',
+            $truncated,
+            $tree->getSize()
+        );
+        $this->assertFalse($result);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithEmptyProofNodes(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2'];
+        $tree = new Tree($leaves, 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        // Empty proof for a 2-leaf tree should fail
+        $emptyProof = new InclusionProof(0, []);
+        $result = $client->verifyInclusionProof(
+            'sha256',
+            $merkleRoot,
+            'leaf1',
+            $emptyProof,
+            $tree->getSize()
+        );
         $this->assertFalse($result);
     }
 
@@ -310,6 +478,147 @@ class VerifyTraitTest extends TestCase
         );
 
         $this->assertTrue($result);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithSha384(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, 'sha384');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        foreach ($leaves as $leaf) {
+            $proof = $tree->getInclusionProof($leaf);
+            $result = $client->verifyInclusionProof(
+                'sha384',
+                $merkleRoot,
+                $leaf,
+                $proof,
+                $tree->getSize()
+            );
+            $this->assertTrue($result, "Proof failed for {$leaf} with sha384");
+        }
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithSha512(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, 'sha512');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        foreach ($leaves as $leaf) {
+            $proof = $tree->getInclusionProof($leaf);
+            $result = $client->verifyInclusionProof(
+                'sha512',
+                $merkleRoot,
+                $leaf,
+                $proof,
+                $tree->getSize()
+            );
+            $this->assertTrue($result, "Proof failed for {$leaf} with sha512");
+        }
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofWithBlake2b(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, 'blake2b');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        foreach ($leaves as $leaf) {
+            $proof = $tree->getInclusionProof($leaf);
+            $result = $client->verifyInclusionProof(
+                'blake2b',
+                $merkleRoot,
+                $leaf,
+                $proof,
+                $tree->getSize()
+            );
+            $this->assertTrue($result, "Proof failed for {$leaf} with blake2b");
+        }
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofRejectsWrongHashFunction(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        // Build tree with sha512
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, 'sha512');
+        $merkleRoot = $tree->getEncodedRoot();
+        $proof = $tree->getInclusionProof('leaf1');
+
+        // Verify with sha256 - should fail because hashes won't match
+        $result = $client->verifyInclusionProof(
+            'sha256',
+            $merkleRoot,
+            'leaf1',
+            $proof,
+            $tree->getSize()
+        );
+        $this->assertFalse($result, 'Incorrect hash function yet the result was accepted!');
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testVerifyInclusionProofSha384NonPowerOfTwo(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        // 5 leaves = non-power-of-2, exercises edge cases
+        $leaves = ['a', 'b', 'c', 'd', 'e'];
+        $tree = new Tree($leaves, 'sha384');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        foreach ($leaves as $leaf) {
+            $proof = $tree->getInclusionProof($leaf);
+            $result = $client->verifyInclusionProof(
+                'sha384',
+                $merkleRoot,
+                $leaf,
+                $proof,
+                $tree->getSize()
+            );
+            $this->assertTrue($result, "Proof failed for '{$leaf}' with sha384, 5-leaf tree");
+        }
     }
 
     /**
@@ -683,5 +992,168 @@ class VerifyTraitTest extends TestCase
         $this->assertTrue($result[0]->verified);
         $this->assertTrue($result[1]->verified);
         $this->assertTrue($result[2]->verified);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysHappyPath(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $actorUrl = 'https://example.com/users/alice';
+
+        // Generate two real Ed25519 keys
+        $key1 = SecretKey::generate()->getPublicKey();
+        $key2 = SecretKey::generate()->getPublicKey();
+
+        // Build a Merkle tree with leaf data for each key
+        $leaf1 = 'key-leaf-1';
+        $leaf2 = 'key-leaf-2';
+        $tree = new Tree([$leaf1, $leaf2], 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+
+        $proof1 = $tree->getInclusionProof($leaf1);
+        $proof2 = $tree->getInclusionProof($leaf2);
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'alice',
+            'example.com',
+            $actorUrl
+        );
+
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [
+                    [
+                        'public-key' => $key1->toString(),
+                        'key-id' => 'key-001',
+                        'trusted' => true,
+                        'inclusion-proof' => array_map(
+                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                            $proof1->proof
+                        ),
+                        'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf1),
+                        'leaf-index' => $proof1->index,
+                    ],
+                    [
+                        'public-key' => $key2->toString(),
+                        'key-id' => 'key-002',
+                        'trusted' => false,
+                        'inclusion-proof' => array_map(
+                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                            $proof2->proof
+                        ),
+                        'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf2),
+                        'leaf-index' => $proof2->index,
+                    ],
+                ],
+                'merkle-root' => $merkleRoot,
+                'tree-size' => $tree->getSize(),
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $client->setHttpClient(
+            $this->createMockClient([$webFingerResponse, $keysResponse])
+        );
+
+        $result = $client->fetchPublicKeys('alice@example.com');
+
+        // Verify returned array
+        $this->assertCount(2, $result);
+
+        // First key
+        $this->assertInstanceOf(VerifiedPublicKey::class, $result[0]);
+        $this->assertTrue($result[0]->verified);
+        $this->assertSame($merkleRoot, $result[0]->merkleRoot);
+        $this->assertSame($proof1->index, $result[0]->leafIndex);
+        $this->assertSame(
+            $key1->toString(),
+            $result[0]->publicKey->toString()
+        );
+
+        // Metadata preserved (minus proof fields and public-key)
+        $meta1 = $result[0]->publicKey->getMetadata();
+        $this->assertSame('key-001', $meta1['key-id']);
+        $this->assertTrue($meta1['trusted']);
+        $this->assertArrayNotHasKey('public-key', $meta1);
+        $this->assertArrayNotHasKey('inclusion-proof', $meta1);
+        $this->assertArrayNotHasKey('merkle-leaf', $meta1);
+        $this->assertArrayNotHasKey('leaf-index', $meta1);
+
+        // Second key
+        $this->assertInstanceOf(VerifiedPublicKey::class, $result[1]);
+        $this->assertTrue($result[1]->verified);
+        $this->assertSame($merkleRoot, $result[1]->merkleRoot);
+        $this->assertSame($proof2->index, $result[1]->leafIndex);
+        $this->assertSame(
+            $key2->toString(),
+            $result[1]->publicKey->toString()
+        );
+        $meta2 = $result[1]->publicKey->getMetadata();
+        $this->assertSame('key-002', $meta2['key-id']);
+        $this->assertFalse($meta2['trusted']);
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    public function testFetchPublicKeysTreeSizeCoercion(): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        $actorUrl = 'https://example.com/users/bob';
+
+        $key = SecretKey::generate()->getPublicKey();
+        $leaf = 'coercion-leaf';
+        $tree = new Tree([$leaf, 'pad'], 'sha256');
+        $merkleRoot = $tree->getEncodedRoot();
+        $proof = $tree->getInclusionProof($leaf);
+
+        $webFingerResponse = TestHelper::createWebFingerResponse(
+            'bob',
+            'example.com',
+            $actorUrl
+        );
+
+        // tree-size as string "2" instead of int 2
+        $keysResponse = TestHelper::createSignedJsonResponse(
+            $this->serverKey,
+            [
+                'actor-id' => $actorUrl,
+                'public-keys' => [[
+                    'public-key' => $key->toString(),
+                    'inclusion-proof' => array_map(
+                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                        $proof->proof
+                    ),
+                    'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
+                    'leaf-index' => $proof->index,
+                ]],
+                'merkle-root' => $merkleRoot,
+                'tree-size' => (string) $tree->getSize(),
+            ],
+            'fedi-e2ee:v1/api/actor/get-keys'
+        );
+
+        $client->setHttpClient(
+            $this->createMockClient([$webFingerResponse, $keysResponse])
+        );
+
+        $result = $client->fetchPublicKeys('bob@example.com');
+
+        $this->assertCount(1, $result);
+        $this->assertTrue($result[0]->verified);
     }
 }

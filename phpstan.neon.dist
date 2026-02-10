@@ -31,6 +31,3 @@ parameters:
 		  path: tests/
 		- message: '#does not accept mixed#'
 		  path: tests/
-		# Allow unused methods in test helpers
-		- message: '#is unused#'
-		  path: tests/

@@ -26,7 +26,7 @@ $harness = new class {
     {
         // Dummy key; never used for signing verification in this target.
         $this->pk = PublicKey::fromString(
-            'ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            'ed25519:' . str_repeat('A', 43)
         );
     }
 };

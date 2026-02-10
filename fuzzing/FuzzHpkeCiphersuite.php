@@ -25,7 +25,7 @@ $harness = new class {
     public function __construct()
     {
         $this->pk = PublicKey::fromString(
-            'ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            'ed25519:' . str_repeat('A', 43)
         );
     }
 

@@ -30,5 +30,8 @@ jobs:
       - name: Install Composer dependencies
         uses: "ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520" #v3
 
-      - name: PHPUnit tests
-        run: vendor/bin/phpunit
+      - name: PHPUnit unit tests
+        run: vendor/bin/phpunit --testsuite unit
+
+      - name: Test vector validation
+        run: vendor/bin/phpunit --testsuite integration --group test-vectors

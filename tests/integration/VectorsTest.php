@@ -2,37 +2,37 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\IntegrationTests;
 
+use FediE2EE\PKD\Crypto\Exceptions\BundleException;
 use FediE2EE\PKD\Crypto\Exceptions\CryptoException;
+use FediE2EE\PKD\Crypto\Exceptions\InputException;
 use FediE2EE\PKD\Crypto\Exceptions\NotImplementedException;
 use FediE2EE\PKD\Crypto\Merkle\Tree;
+use FediE2EE\PKD\Crypto\Protocol\Bundle;
+use FediE2EE\PKD\Crypto\Protocol\Parser;
+use FediE2EE\PKD\Crypto\PublicKey;
 use FediE2EE\PKD\Crypto\SecretKey;
-use FediE2EE\PKD\EndUserClient;
 use FediE2EE\PKD\Exceptions\ClientException;
-use FediE2EE\PKD\Extensions\ExtensionInterface;
-use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\ReadOnlyClient;
-use FediE2EE\PKD\Tests\TestHelper;
-use GuzzleHttp\Client as HttpClient;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
 use JsonException;
 use ParagonIE\ConstantTime\Base64UrlSafe;
+use ParagonIE\HPKE\HPKE;
+use ParagonIE\HPKE\HPKEException;
+use ParagonIE\HPKE\KEM\DHKEM\Curve;
+use ParagonIE\HPKE\KEM\DHKEM\DecapsKey;
+use ParagonIE\HPKE\KEM\DHKEM\EncapsKey;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SodiumException;
-use function array_filter;
-use function array_map;
-use function count;
-use function file_exists;
-use function file_get_contents;
-use function json_decode;
-use function parse_url;
-use function preg_match;
-use function strlen;
-use function substr;
+use function array_map,
+    count,
+    file_exists,
+    file_get_contents,
+    json_decode,
+    strlen,
+    substr;
 
 /**
  * Test vector-based tests for PKD client.
@@ -40,7 +40,6 @@ use function substr;
  * These tests verify the client can properly fetch and interpret data
  * that a PKD server would serve after processing the test vector steps.
  */
-#[CoversClass(EndUserClient::class)]
 #[CoversClass(ReadOnlyClient::class)]
 #[Group('integration')]
 #[Group('test-vectors')]
@@ -49,15 +48,15 @@ class VectorsTest extends TestCase
     private const TEST_VECTORS_PATH = __DIR__ . '/../TestVectors/test-vectors.json';
 
     /** @var array<string, mixed>|null */
-    private static ?array $testVectors = null;
+    private static ?array $vectors = null;
 
     /**
      * @throws JsonException
      */
-    private static function loadTestVectors(): array
+    private static function loadVectors(): array
     {
-        if (self::$testVectors !== null) {
-            return self::$testVectors;
+        if (self::$vectors !== null) {
+            return self::$vectors;
         }
 
         if (!file_exists(self::TEST_VECTORS_PATH)) {
@@ -66,38 +65,61 @@ class VectorsTest extends TestCase
                 'Please run: cp path/to/vectorgen/output/test-vectors.json tests/TestVectors/'
             );
         }
-
-        $content = file_get_contents(self::TEST_VECTORS_PATH);
-        if ($content === false) {
-            throw new RuntimeException('Failed to read test vectors file');
+        $raw = file_get_contents(self::TEST_VECTORS_PATH);
+        if ($raw === false) {
+            throw new RuntimeException('Failed to read test vectors');
         }
+        self::$vectors = json_decode(
+            $raw, true, 512, JSON_THROW_ON_ERROR
+        );
+        return self::$vectors;
+    }
 
-        self::$testVectors = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
-        return self::$testVectors;
+    private static function decodeLeaves(array $encoded): array
+    {
+        return array_map(
+            fn(string $l) => Base64UrlSafe::decodeNoPadding($l),
+            $encoded
+        );
+    }
+
+    /**
+     * @return PublicKey[]
+     * @throws CryptoException
+     */
+    private static function identityPublicKeys(array $tc): array
+    {
+        $keys = [];
+        foreach ($tc['identities'] as $actorUrl => $material) {
+            $pkBytes = Base64UrlSafe::decodeNoPadding(
+                $material['ed25519']['public-key']
+            );
+            $keys[$actorUrl] = new PublicKey($pkBytes, 'ed25519');
+        }
+        return $keys;
     }
 
     /**
      * @throws JsonException
      */
-    public static function provideTestCasesWithPublicKeys(): iterable
+    public static function provideTestCases(): iterable
     {
-        $vectors = self::loadTestVectors();
+        $vecs = self::loadVectors();
+        foreach ($vecs['test-cases'] as $tc) {
+            yield $tc['name'] => [$tc];
+        }
+    }
 
-        foreach ($vectors['test-cases'] as $testCase) {
-            $finalMapping = $testCase['final-mapping'] ?? [];
-            $actors = $finalMapping['actors'] ?? [];
-
-            // Only yield test cases that have actors with public keys
-            foreach ($actors as $actorUrl => $actorData) {
-                $publicKeys = $actorData['public-keys'] ?? [];
-                if (!empty($publicKeys)) {
-                    yield "{$testCase['name']}:{$actorUrl}" => [
-                        $testCase['name'],
-                        $actorUrl,
-                        $actorData,
-                        $testCase['server-keys']
-                    ];
-                }
+    /**
+     * @throws JsonException
+     */
+    public static function provideNonEmptyTreeCases(): iterable
+    {
+        $vecs = self::loadVectors();
+        foreach ($vecs['test-cases'] as $tc) {
+            $leafCount = $tc['final-mapping']['merkle-tree']['leaf-count'];
+            if ($leafCount > 0) {
+                yield $tc['name'] => [$tc];
             }
         }
     }
@@ -105,310 +127,88 @@ class VectorsTest extends TestCase
     /**
      * @throws JsonException
      */
-    public static function provideTestCasesWithAuxData(): iterable
+    public static function provideStepsForSignature(): iterable
     {
-        $vectors = self::loadTestVectors();
-        $hasYieldedAny = false;
-
-        foreach ($vectors['test-cases'] as $testCase) {
-            $finalMapping = $testCase['final-mapping'] ?? [];
-            $actors = $finalMapping['actors'] ?? [];
-
-            // Only yield test cases that have actors with aux-data
-            foreach ($actors as $actorUrl => $actorData) {
-                $auxData = $actorData['aux-data'] ?? [];
-                if (!empty($auxData)) {
-                    $hasYieldedAny = true;
-                    yield "{$testCase['name']}:{$actorUrl}" => [
-                        $testCase['name'],
-                        $actorUrl,
-                        $actorData,
-                        $testCase['server-keys']
-                    ];
-                }
-            }
-        }
-
-        // If no aux-data found in any test case, yield a placeholder
-        if (!$hasYieldedAny) {
-            yield 'no-aux-data-in-vectors' => ['placeholder', '', [], []];
-        }
-    }
-
-    private function createMockClient(array $responses): HttpClient
-    {
-        $mock = new MockHandler($responses);
-        $handlerStack = HandlerStack::create($mock);
-        return new HttpClient(['handler' => $handlerStack]);
-    }
-
-    private function createServerKey(array $serverKeys): SecretKey
-    {
-        $secretKeyBytes = Base64UrlSafe::decodeNoPadding($serverKeys['sign-secret-key']);
-        return new SecretKey($secretKeyBytes, 'ed25519');
-    }
-
-    private function extractHostAndActor(string $actorUrl): array
-    {
-        $parsed = parse_url($actorUrl);
-        $host = $parsed['host'] ?? 'example.com';
-        if (isset($parsed['port'])) {
-            $host .= ':' . $parsed['port'];
-        }
-        // Extract username from path like /users/alice
-        $path = $parsed['path'] ?? '';
-        preg_match('/\/users\/([^\/]+)/', $path, $matches);
-        $actor = $matches[1] ?? 'unknown';
-
-        return [$host, $actor];
-    }
-
-    /**
-     * Test that the client can fetch public keys matching the test vector final state.
-     */
-    #[DataProvider('provideTestCasesWithPublicKeys')]
-    public function testFetchPublicKeysMatchesVectorState(
-        string $testCaseName,
-        string $actorUrl,
-        array $actorData,
-        array $serverKeys
-    ): void {
-        $serverKey = $this->createServerKey($serverKeys);
-        $serverPk = $serverKey->getPublicKey();
-        [$hostname, $actor] = $this->extractHostAndActor($actorUrl);
-
-        $publicKeys = $actorData['public-keys'] ?? [];
-        $expectedKeys = [];
-        foreach ($publicKeys as $keyId => $keyData) {
-            if (($keyData['revoked'] ?? false) === false) {
-                $expectedKeys[] = $keyData['public-key'];
-            }
-        }
-
-        if (empty($expectedKeys)) {
-            $this->markTestSkipped("No non-revoked public keys for {$actorUrl} in {$testCaseName}");
-        }
-
-        // Create mock responses
-        $webFingerResponse = TestHelper::createWebFingerResponse($actor, $hostname, $actorUrl);
-
-        // Build public keys response data
-        $keysData = [];
-        foreach ($publicKeys as $keyId => $keyData) {
-            if (($keyData['revoked'] ?? false) === false) {
-                $keysData[] = [
-                    'public-key' => $keyData['public-key'],
-                    'key-id' => $keyId,
-                    'trusted' => true
+        $vecs = self::loadVectors();
+        foreach ($vecs['test-cases'] as $tc) {
+            foreach ($tc['steps'] as $i => $step) {
+                yield "{$tc['name']}:step-{$i}" => [
+                    $tc, $i, $step,
                 ];
             }
         }
+    }
 
-        $keysResponse = TestHelper::createPublicKeysResponse($serverKey, $actorUrl, $keysData);
-
-        // Create client and fetch keys
-        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
-        $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
-
-        $fetchedKeys = $client->fetchUnverifiedPublicKeys($actor . '@' . $hostname);
+    /**
+     * @throws CryptoException
+     * @throws SodiumException
+     */
+    #[DataProvider('provideTestCases')]
+    public function testMerkleTreeRootFromLeaves(array $tc): void
+    {
+        $mt = $tc['final-mapping']['merkle-tree'];
+        $leaves = self::decodeLeaves($mt['leaves']);
 
         $this->assertCount(
-            count($expectedKeys),
-            $fetchedKeys,
-            "Key count mismatch for {$actorUrl} in test case {$testCaseName}"
+            $mt['leaf-count'],
+            $leaves,
+            "Leaf count mismatch in {$tc['name']}"
         );
 
-        // Verify each key matches
-        $fetchedKeyStrings = array_map(fn($k) => $k->toString(), $fetchedKeys);
-        foreach ($expectedKeys as $expectedKey) {
-            $this->assertContains(
-                $expectedKey,
-                $fetchedKeyStrings,
-                "Expected key {$expectedKey} not found for {$actorUrl}"
+        if ($mt['leaf-count'] === 0) {
+            $this->assertSame(
+                'pkd-mr-v1:'
+                . Base64UrlSafe::encodeUnpadded(str_repeat("\x00", 32)),
+                $mt['root'],
+                "Empty tree root mismatch in {$tc['name']}"
             );
+            return;
         }
+
+        $tree = new Tree($leaves, 'sha256');
+        $this->assertSame(
+            $mt['root'],
+            $tree->getEncodedRoot(),
+            "Merkle root mismatch in {$tc['name']}"
+        );
     }
 
     /**
-     * Test that the client can fetch aux data matching the test vector final state.
+     * @throws CryptoException
+     * @throws SodiumException
      */
-    #[DataProvider('provideTestCasesWithAuxData')]
-    public function testFetchAuxDataMatchesVectorState(
-        string $testCaseName,
-        string $actorUrl,
-        array $actorData,
-        array $serverKeys
-    ): void {
-        // Handle placeholder case when no aux-data exists in vectors
-        if ($testCaseName === 'placeholder') {
-            $this->markTestSkipped('No test cases with aux-data in vectors');
-        }
+    #[DataProvider('provideTestCases')]
+    public function testIncrementalMerkleRootChain(array $tc): void
+    {
+        $tree = new Tree([], 'sha256');
 
-        $serverKey = $this->createServerKey($serverKeys);
-        $serverPk = $serverKey->getPublicKey();
-        [$hostname, $actor] = $this->extractHostAndActor($actorUrl);
-
-        $auxDataEntries = $actorData['aux-data'] ?? [];
-        if (empty($auxDataEntries)) {
-            $this->markTestSkipped("No aux-data for {$actorUrl} in {$testCaseName}");
-        }
-
-        // Create registry with test extension that accepts any aux-type
-        $registry = new Registry();
-        foreach ($auxDataEntries as $entry) {
-            $auxType = $entry['aux-type'] ?? 'test-v1';
-            $testExtension = new class($auxType) implements ExtensionInterface {
-                public function __construct(private string $type) {}
-                public function getAuxDataType(): string { return $this->type; }
-                public function getRejectionReason(): string { return 'Invalid'; }
-                public function isValid(string $auxData): bool { return true; }
-            };
-            $registry->addAuxDataType($testExtension);
-        }
-
-        // Create mock responses
-        $webFingerResponse = TestHelper::createWebFingerResponse($actor, $hostname, $actorUrl);
-
-        // Build aux info response
-        $auxInfoList = [];
-        foreach ($auxDataEntries as $entry) {
-            $auxInfoList[] = [
-                'aux-id' => $entry['aux-id'] ?? 'aux-001',
-                'aux-type' => $entry['aux-type'] ?? 'test-v1'
-            ];
-        }
-
-        $auxInfoResponse = TestHelper::createAuxInfoResponse($serverKey, $actorUrl, $auxInfoList);
-
-        // Build individual aux data responses
-        $responses = [$webFingerResponse, $auxInfoResponse];
-        foreach ($auxDataEntries as $entry) {
-            $responses[] = TestHelper::createAuxDataResponse(
-                $serverKey,
-                $actorUrl,
-                $entry['aux-id'] ?? 'aux-001',
-                $entry['aux-type'] ?? 'test-v1',
-                $entry['aux-data'] ?? ''
+        foreach ($tc['steps'] as $i => $step) {
+            $this->assertSame(
+                $step['merkle-root-before'],
+                $tree->getEncodedRoot(),
+                "Root-before mismatch at step {$i} in {$tc['name']}"
             );
-        }
 
-        // Create client and fetch aux data
-        $client = new EndUserClient('http://pkd.test', $serverPk, $registry);
-        $client->setHttpClient($this->createMockClient($responses));
-
-        // Fetch for first aux type in list
-        $firstAuxType = $auxDataEntries[0]['aux-type'] ?? 'test-v1';
-        $fetchedAuxData = $client->fetchUnverifiedAuxData($actor . '@' . $hostname, $firstAuxType);
-
-        // Count expected entries of this type
-        $expectedCount = count(array_filter(
-            $auxDataEntries,
-            fn($e) => ($e['aux-type'] ?? 'test-v1') === $firstAuxType
-        ));
-
-        $this->assertCount(
-            $expectedCount,
-            $fetchedAuxData,
-            "Aux data count mismatch for {$actorUrl} in test case {$testCaseName}"
-        );
-    }
-
-    /**
-     * Test that fireproof status is correctly reflected in actor metadata.
-     */
-    public function testFireproofStatusFromVectors(): void
-    {
-        $vectors = self::loadTestVectors();
-
-        foreach ($vectors['test-cases'] as $testCase) {
-            $finalMapping = $testCase['final-mapping'] ?? [];
-            $actors = $finalMapping['actors'] ?? [];
-
-            foreach ($actors as $actorUrl => $actorData) {
-                $isFireproof = $actorData['fireproof'] ?? false;
-
-                // Verify the test vector has the expected fireproof values
-                // This is a sanity check on the test vectors themselves
-                if ($testCase['name'] === 'basic-enrollment-and-fireproof') {
-                    $this->assertTrue(
-                        $isFireproof,
-                        "Actor {$actorUrl} should be fireproof in {$testCase['name']}"
-                    );
-                }
-            }
-        }
-
-        // Mark test as passed
-        $this->assertTrue(true);
-    }
-
-    /**
-     * Test that the client handles empty public key lists gracefully.
-     */
-    public function testHandlesActorWithNoPublicKeys(): void
-    {
-        $serverKey = SecretKey::generate();
-        $serverPk = $serverKey->getPublicKey();
-
-        $webFingerResponse = TestHelper::createWebFingerResponse(
-            'newuser',
-            'example.com',
-            'https://example.com/users/newuser'
-        );
-
-        // Server returns empty public keys array
-        $keysResponse = TestHelper::createPublicKeysResponse(
-            $serverKey,
-            'https://example.com/users/newuser',
-            []
-        );
-
-        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
-        $client->setHttpClient($this->createMockClient([$webFingerResponse, $keysResponse]));
-
-        $fetchedKeys = $client->fetchUnverifiedPublicKeys('newuser@example.com');
-
-        $this->assertCount(0, $fetchedKeys);
-    }
-
-    /**
-     * Test that the merkle root format from vectors is valid.
-     */
-    public function testMerkleRootFormat(): void
-    {
-        $vectors = self::loadTestVectors();
-
-        foreach ($vectors['test-cases'] as $testCase) {
-            $finalMapping = $testCase['final-mapping'] ?? [];
-            $merkleTree = $finalMapping['merkle-tree'] ?? [];
-            $root = $merkleTree['root'] ?? null;
-
-            if ($root !== null) {
-                // Verify merkle root starts with expected prefix
-                $this->assertStringStartsWith(
-                    'pkd-mr-v1:',
-                    $root,
-                    "Merkle root should have pkd-mr-v1: prefix in {$testCase['name']}"
+            if ($step['expect-fail'] ?? false) {
+                // Rejected step: root must not change
+                $this->assertSame(
+                    $step['merkle-root-before'],
+                    $step['merkle-root-after'],
+                    "Failed step {$i} changed root in {$tc['name']}"
                 );
-
-                // Verify the rest is valid base64url
-                $rootData = substr($root, strlen('pkd-mr-v1:'));
-                $decoded = Base64UrlSafe::decodeNoPadding($rootData);
-                $this->assertSame(32, strlen($decoded), "Merkle root should be 32 bytes");
+            } else {
+                // Accepted step: add leaf and verify root.
+                // The tree stores the base64url string as the
+                // leaf value (not the decoded bytes).
+                $tree->addLeaf($step['merkle-leaf']);
+                $this->assertSame(
+                    $step['merkle-root-after'],
+                    $tree->getEncodedRoot(),
+                    "Root-after mismatch at step {$i}"
+                    . " in {$tc['name']}"
+                );
             }
         }
-
-        $this->assertTrue(true);
-    }
-
-    public static function hashFuncsProvider(): array
-    {
-        return [
-            ['blake2b'],
-            ['sha256'],
-            ['sha384'],
-            ['sha512'],
-        ];
     }
 
     /**
@@ -417,170 +217,266 @@ class VectorsTest extends TestCase
      * @throws NotImplementedException
      * @throws SodiumException
      */
-    public function testClientVerifyInclusionProofWithFreshTree(): void
+    #[DataProvider('provideNonEmptyTreeCases')]
+    public function testInclusionProofVerification(array $tc): void
     {
-        $hashFunc = 'sha256';
+        $mt = $tc['final-mapping']['merkle-tree'];
+        $leaves = self::decodeLeaves($mt['leaves']);
+        $tree = new Tree($leaves, 'sha256');
+        $root = $tree->getEncodedRoot();
+        $treeSize = $tree->getSize();
+
         $serverKey = SecretKey::generate();
-        $serverPk = $serverKey->getPublicKey();
-
-        // Create client
-        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
-
-        $leaves = ['test-leaf-1', 'test-leaf-2', 'test-leaf-3', 'test-leaf-4'];
-        $tree = new Tree($leaves, $hashFunc);
-
-        $merkleRoot = $tree->getEncodedRoot();
-        $proof = $tree->getInclusionProof('test-leaf-1');
-
-        $result = $client->verifyInclusionProof(
-            $hashFunc,
-            $merkleRoot,
-            'test-leaf-1',
-            $proof,
-            $tree->getSize()
+        $client = new ReadOnlyClient(
+            'http://pkd.test',
+            $serverKey->getPublicKey()
         );
 
-        $this->assertTrue($result, 'Inclusion proof verification should succeed');
+        foreach ($leaves as $idx => $leaf) {
+            $proof = $tree->getInclusionProof($leaf);
 
-        $result = $client->verifyInclusionProof(
-            $hashFunc,
-            $merkleRoot,
-            'wrong-leaf',
-            $proof,
-            $tree->getSize()
-        );
-
-        $this->assertFalse($result, 'Inclusion proof verification should fail for wrong leaf');
-    }
-
-    /**
-     * @throws JsonException
-     */
-    public function testInclusionProofVerificationWithVariousTreeSizes(): void
-    {
-        $serverKey = SecretKey::generate();
-        $serverPk = $serverKey->getPublicKey();
-        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
-
-        // Test with power-of-2 sizes and non-power-of-2 sizes
-        $treeSizes = [1, 2, 3, 4, 5, 7, 8, 15, 16, 17, 31, 32, 33];
-
-        foreach ($treeSizes as $size) {
-            $leaves = [];
-            for ($i = 0; $i < $size; $i++) {
-                $leaves[] = "leaf-{$i}";
-            }
-
-            $tree = new Tree($leaves, 'sha256');
-            $merkleRoot = $tree->getEncodedRoot();
-
-            // Verify proof for first leaf
-            $proof = $tree->getInclusionProof('leaf-0');
-            $result = $client->verifyInclusionProof(
-                'sha256',
-                $merkleRoot,
-                'leaf-0',
-                $proof,
-                $tree->getSize()
+            $this->assertTrue(
+                $client->verifyInclusionProof(
+                    'sha256', $root, $leaf, $proof, $treeSize
+                ),
+                "Inclusion proof failed for leaf {$idx}"
+                . " in {$tc['name']}"
             );
 
-            $this->assertTrue($result, "Proof verification failed for first leaf in tree of size {$size}");
-
-            // Verify proof for last leaf
-            $lastLeaf = "leaf-" . ($size - 1);
-            $proof = $tree->getInclusionProof($lastLeaf);
-            $result = $client->verifyInclusionProof(
-                'sha256',
-                $merkleRoot,
-                $lastLeaf,
-                $proof,
-                $tree->getSize()
+            // Verify wrong leaf fails
+            $this->assertFalse(
+                $client->verifyInclusionProof(
+                    'sha256',
+                    $root,
+                    'wrong-leaf-' . $idx,
+                    $proof,
+                    $treeSize
+                ),
+                "Wrong leaf should fail for leaf {$idx}"
+                . " in {$tc['name']}"
             );
-
-            $this->assertTrue($result, "Proof verification failed for last leaf in tree of size {$size}");
         }
     }
 
     /**
-     * @throws JsonException
+     * Every step's signed-message must parse as a valid Bundle.
      */
-    public function testMerkleRootFromVectorsIsDecodable(): void
+    #[DataProvider('provideStepsForSignature')]
+    public function testSignedMessageParsesAsBundle(
+        array $tc,
+        int $stepIdx,
+        array $step,
+    ): void {
+        $bundle = Bundle::fromJson($step['signed-message']);
+        $this->assertNotEmpty(
+            $bundle->getAction(),
+            "Empty action at step {$stepIdx} in {$tc['name']}"
+        );
+        $this->assertNotEmpty(
+            $bundle->getSignature(),
+            "Empty signature at step {$stepIdx} in {$tc['name']}"
+        );
+    }
+
+    /**
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    #[DataProvider('provideStepsForSignature')]
+    public function testSignedMessageSignatureVerification(
+        array $tc,
+        int $stepIdx,
+        array $step,
+    ): void {
+        $bundle = Bundle::fromJson($step['signed-message']);
+        $signedMsg = $bundle->toSignedMessage();
+        $identityKeys = self::identityPublicKeys($tc);
+
+        $serverPkBytes = Base64UrlSafe::decodeNoPadding(
+            $tc['server-keys']['sign-public-key']
+        );
+        $allKeys = $identityKeys;
+        $allKeys['__server__'] = new PublicKey(
+            $serverPkBytes, 'ed25519'
+        );
+
+        $verified = false;
+        foreach ($allKeys as $key) {
+            if ($signedMsg->verify($key)) {
+                $verified = true;
+                break;
+            }
+        }
+
+        $this->assertTrue(
+            $verified,
+            "Signature verification failed for step {$stepIdx}"
+            . " ({$step['description']}) in {$tc['name']}"
+        );
+    }
+
+    /**
+     * Verify that the step merkle-leaves (for accepted steps) match
+     * the final-mapping tree leaves in order.
+     */
+    #[DataProvider('provideTestCases')]
+    public function testStepLeavesMatchFinalTree(array $tc): void
     {
-        $vectors = self::loadTestVectors();
+        $mt = $tc['final-mapping']['merkle-tree'];
+        $finalLeaves = self::decodeLeaves($mt['leaves']);
+        $leafIdx = 0;
 
-        foreach ($vectors['test-cases'] as $testCase) {
-            $finalMapping = $testCase['final-mapping'] ?? [];
-            $merkleTree = $finalMapping['merkle-tree'] ?? [];
-            $expectedRoot = $merkleTree['root'] ?? null;
-
-            if ($expectedRoot === null) {
+        foreach ($tc['steps'] as $i => $step) {
+            if ($step['expect-fail'] ?? false) {
                 continue;
             }
+            $stepLeaf = $step['merkle-leaf'];
+            $this->assertArrayHasKey(
+                $leafIdx,
+                $finalLeaves,
+                "More accepted steps than final leaves at"
+                . " step {$i} in {$tc['name']}"
+            );
+            $this->assertSame(
+                $finalLeaves[$leafIdx],
+                $stepLeaf,
+                "Leaf mismatch: step {$i} != final leaf"
+                . " {$leafIdx} in {$tc['name']}"
+            );
+            $leafIdx++;
+        }
 
-            // Verify format
+        $this->assertSame(
+            count($finalLeaves),
+            $leafIdx,
+            "Accepted step count != final leaf count"
+            . " in {$tc['name']}"
+        );
+    }
+
+    #[DataProvider('provideTestCases')]
+    public function testMerkleRootFormat(array $tc): void
+    {
+        $roots = [$tc['final-mapping']['merkle-tree']['root']];
+        foreach ($tc['steps'] as $step) {
+            $roots[] = $step['merkle-root-before'];
+            $roots[] = $step['merkle-root-after'];
+        }
+
+        foreach ($roots as $root) {
             $this->assertStringStartsWith(
                 'pkd-mr-v1:',
-                $expectedRoot,
-                "Merkle root should have prefix in {$testCase['name']}"
+                $root,
+                "Missing prefix in {$tc['name']}"
             );
-
-            // Verify it's decodable
-            $encoded = substr($expectedRoot, strlen('pkd-mr-v1:'));
+            $encoded = substr($root, strlen('pkd-mr-v1:'));
             $decoded = Base64UrlSafe::decodeNoPadding($encoded);
-
             $this->assertSame(
                 32,
                 strlen($decoded),
-                "Merkle root should decode to 32 bytes in {$testCase['name']}"
+                "Root not 32 bytes in {$tc['name']}: "
+                . "{$root}"
             );
         }
     }
 
     /**
+     * @throws BundleException
+     * @throws HPKEException
+     * @throws InputException
+     */
+    #[DataProvider('provideStepsForSignature')]
+    public function testHpkeWrappedMessageDecryption(
+        array $tc,
+        int $stepIdx,
+        array $step,
+    ): void {
+        $hpkeWrapped = $step['hpke-wrapped-message'] ?? '';
+        if ($hpkeWrapped === '') {
+            $this->markTestSkipped(
+                "No HPKE-wrapped message at step {$stepIdx}"
+            );
+        }
+
+        // BurnDown is sent unencrypted
+        $action = json_decode(
+            $step['signed-message'], true
+        )['action'];
+        if ($action === 'BurnDown') {
+            $this->markTestSkipped(
+                "BurnDown is not HPKE-encrypted"
+            );
+        }
+
+        $parser = new Parser();
+        $hpkeDecapsKeyBytes = Base64UrlSafe::decodeNoPadding(
+            $tc['server-keys']['hpke-decaps-key']
+        );
+        $hpkeEncapsKeyBytes = Base64UrlSafe::decodeNoPadding(
+            $tc['server-keys']['hpke-encaps-key']
+        );
+
+        $factory = \ParagonIE\HPKE\Factory::init(
+            'DHKEM(X25519, HKDF-SHA256),'
+            . ' HKDF-SHA256, ChaCha20Poly1305'
+        );
+        $hpke = new HPKE(
+            $factory->kem, $factory->kdf, $factory->aead
+        );
+
+        $curve = Curve::X25519;
+        $decapsKey = new DecapsKey(
+            $curve, $hpkeDecapsKeyBytes
+        );
+        $encapsKey = new EncapsKey(
+            $curve, $hpkeEncapsKeyBytes
+        );
+
+        $decryptedBundle = $parser->hpkeDecrypt(
+            $hpkeWrapped, $decapsKey, $encapsKey, $hpke
+        );
+
+        $signedBundle = Bundle::fromJson($step['signed-message']);
+
+        $this->assertSame(
+            $signedBundle->getAction(),
+            $decryptedBundle->getAction(),
+            "Action mismatch after HPKE decrypt at"
+            . " step {$stepIdx} in {$tc['name']}"
+        );
+        $this->assertSame(
+            $signedBundle->getSignature(),
+            $decryptedBundle->getSignature(),
+            "Signature mismatch after HPKE decrypt at"
+            . " step {$stepIdx} in {$tc['name']}"
+        );
+        $this->assertSame(
+            $signedBundle->getRecentMerkleRoot(),
+            $decryptedBundle->getRecentMerkleRoot(),
+            "Merkle root mismatch after HPKE decrypt at"
+            . " step {$stepIdx} in {$tc['name']}"
+        );
+    }
+
+    /**
      * @throws JsonException
      */
-    public function testMerkleRootTransitionsInVectors(): void
+    public function testVectorVersion(): void
     {
-        $vectors = self::loadTestVectors();
+        $vecs = self::loadVectors();
+        $this->assertArrayHasKey('version', $vecs);
+        $this->assertIsString($vecs['version']);
+        $this->assertNotEmpty($vecs['version']);
+    }
 
-        foreach ($vectors['test-cases'] as $testCase) {
-            $steps = $testCase['steps'] ?? [];
-
-            for ($i = 0; $i < count($steps); $i++) {
-                $step = $steps[$i];
-                $rootBefore = $step['merkle-root-before'];
-                $rootAfter = $step['merkle-root-after'];
-                $expectFail = $step['expect-fail'] ?? false;
-
-                // Both roots should be valid format
-                $this->assertStringStartsWith('pkd-mr-v1:', $rootBefore);
-                $this->assertStringStartsWith('pkd-mr-v1:', $rootAfter);
-
-                if ($expectFail) {
-                    // Failed operations should not change the root
-                    $this->assertSame(
-                        $rootBefore,
-                        $rootAfter,
-                        "Failed step should not change Merkle root in {$testCase['name']} step {$i}"
-                    );
-                } else {
-                    $this->assertSame(
-                        32,
-                        strlen(Base64UrlSafe::decodeNoPadding(substr($rootAfter, strlen('pkd-mr-v1:')))),
-                        "New Merkle root should be 32 bytes in {$testCase['name']} step {$i}"
-                    );
-                }
-
-                // Verify continuity: next step's before should match this step's after
-                if ($i < count($steps) - 1) {
-                    $nextStep = $steps[$i + 1];
-                    $this->assertSame(
-                        $rootAfter,
-                        $nextStep['merkle-root-before'],
-                        "Merkle root chain broken between steps {$i} and " . ($i + 1) . " in {$testCase['name']}"
-                    );
-                }
-            }
-        }
+    /**
+     * @throws JsonException
+     */
+    public function testVectorHasTestCases(): void
+    {
+        $vecs = self::loadVectors();
+        $this->assertArrayHasKey('test-cases', $vecs);
+        $this->assertNotEmpty($vecs['test-cases']);
     }
 }

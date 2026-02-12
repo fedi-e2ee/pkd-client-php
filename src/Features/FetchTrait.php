@@ -87,8 +87,11 @@ trait FetchTrait
      * @throws ClientException
      * @throws ExtensionException
      * @throws GuzzleException
+     * @throws HttpSignatureException
      * @throws JsonException
      * @throws NetworkException
+     * @throws NotImplementedException
+     * @throws SodiumException
      */
     public function fetchUnverifiedAuxData(string $actor, string $auxDataType): array
     {
@@ -106,6 +109,7 @@ trait FetchTrait
         if ($auxDataListResponse->getStatusCode() !== 200) {
             throw new ClientException('Could not retrieve auxiliary data.');
         }
+        $this->verifyHttpSignature($auxDataListResponse);
         $body = $this->parseJsonResponse($auxDataListResponse, 'fedi-e2ee:v1/api/actor/aux-info');
         $this->assertKeysExist($body, ['auxiliary']);
         // Note: 'auxiliary' is an array of items, each with 'aux-id' and 'aux-type'

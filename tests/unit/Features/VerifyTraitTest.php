@@ -721,7 +721,6 @@ class VerifyTraitTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertInstanceOf(VerifiedAuxData::class, $result[0]);
-        $this->assertTrue($result[0]->verified);
         $this->assertSame('test-payload', $result[0]->auxData->data);
         $this->assertSame('test-type', $result[0]->auxData->type);
         $this->assertSame($merkleRoot, $result[0]->merkleRoot);
@@ -990,9 +989,6 @@ class VerifyTraitTest extends TestCase
         $this->assertSame('payload-1', $result[0]->auxData->data);
         $this->assertSame('payload-2', $result[1]->auxData->data);
         $this->assertSame('payload-3', $result[2]->auxData->data);
-        $this->assertTrue($result[0]->verified);
-        $this->assertTrue($result[1]->verified);
-        $this->assertTrue($result[2]->verified);
     }
 
     /**
@@ -1072,7 +1068,6 @@ class VerifyTraitTest extends TestCase
 
         // First key
         $this->assertInstanceOf(VerifiedPublicKey::class, $result[0]);
-        $this->assertTrue($result[0]->verified);
         $this->assertSame($merkleRoot, $result[0]->merkleRoot);
         $this->assertSame($proof1->index, $result[0]->leafIndex);
         $this->assertSame(
@@ -1091,7 +1086,6 @@ class VerifyTraitTest extends TestCase
 
         // Second key
         $this->assertInstanceOf(VerifiedPublicKey::class, $result[1]);
-        $this->assertTrue($result[1]->verified);
         $this->assertSame($merkleRoot, $result[1]->merkleRoot);
         $this->assertSame($proof2->index, $result[1]->leafIndex);
         $this->assertSame(
@@ -1155,7 +1149,6 @@ class VerifyTraitTest extends TestCase
         $result = $client->fetchPublicKeys('bob@example.com');
 
         $this->assertCount(1, $result);
-        $this->assertTrue($result[0]->verified);
     }
 
     /**
@@ -1444,7 +1437,6 @@ class VerifyTraitTest extends TestCase
         $result = $client->fetchAuxData('alice@example.com', 'test-type');
 
         $this->assertCount(1, $result);
-        $this->assertTrue($result[0]->verified);
     }
 
     /**

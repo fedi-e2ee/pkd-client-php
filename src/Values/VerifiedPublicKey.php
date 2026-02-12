@@ -13,6 +13,5 @@ final readonly class VerifiedPublicKey
         public PublicKey $publicKey,
         public string $merkleRoot,
         public int $leafIndex,
-        public bool $verified,
     ) {}
 }

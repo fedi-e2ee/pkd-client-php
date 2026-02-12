@@ -28,30 +28,10 @@ class VerifiedPublicKeyTest extends TestCase
             publicKey: $pk,
             merkleRoot: $merkleRoot,
             leafIndex: $leafIndex,
-            verified: true
         );
 
         $this->assertSame($pk, $verified->publicKey);
         $this->assertSame($merkleRoot, $verified->merkleRoot);
         $this->assertSame($leafIndex, $verified->leafIndex);
-        $this->assertTrue($verified->verified);
-    }
-
-    /**
-     * @throws NotImplementedException
-     * @throws SodiumException
-     */
-    public function testUnverifiedState(): void
-    {
-        $pk = SecretKey::generate()->getPublicKey();
-
-        $unverified = new VerifiedPublicKey(
-            publicKey: $pk,
-            merkleRoot: 'pkd-mr-v1:test-root',
-            leafIndex: 0,
-            verified: false
-        );
-
-        $this->assertFalse($unverified->verified);
     }
 }

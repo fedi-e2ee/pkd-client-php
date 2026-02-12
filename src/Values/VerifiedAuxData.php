@@ -11,6 +11,5 @@ final readonly class VerifiedAuxData
         public AuxData $auxData,
         public string $merkleRoot,
         public int $leafIndex,
-        public bool $verified,
     ) {}
 }

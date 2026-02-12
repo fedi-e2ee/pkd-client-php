@@ -59,6 +59,7 @@ trait VerifyTrait
         InclusionProof $proof,
         int $treeSize
     ): bool {
+        $this->assertValidHashFunction($hashFunction);
         $rootBytes = $this->decodeMerkleRoot($merkleRoot);
 
         // Verify manually following RFC 9162 §2.1.3 since Tree::verifyInclusionProof
@@ -205,7 +206,6 @@ trait VerifyTrait
                 publicKey: $pk,
                 merkleRoot: $merkleRoot,
                 leafIndex: $row['leaf-index'],
-                verified: true
             );
         }
 
@@ -317,7 +317,6 @@ trait VerifyTrait
                 auxData: $auxData,
                 merkleRoot: $merkleRoot,
                 leafIndex: $row['leaf-index'],
-                verified: true
             );
         }
 

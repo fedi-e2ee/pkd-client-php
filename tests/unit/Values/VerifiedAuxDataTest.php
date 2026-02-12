@@ -28,32 +28,11 @@ class VerifiedAuxDataTest extends TestCase
             auxData: $auxData,
             merkleRoot: $merkleRoot,
             leafIndex: $leafIndex,
-            verified: true
         );
 
         $this->assertSame($auxData, $verified->auxData);
         $this->assertSame($merkleRoot, $verified->merkleRoot);
         $this->assertSame($leafIndex, $verified->leafIndex);
-        $this->assertTrue($verified->verified);
-    }
-
-    public function testUnverifiedState(): void
-    {
-        $auxData = new AuxData(
-            type: 'test-type',
-            data: 'test-data',
-            id: 'aux-002',
-            actor: 'https://example.com/users/bob'
-        );
-
-        $unverified = new VerifiedAuxData(
-            auxData: $auxData,
-            merkleRoot: 'pkd-mr-v1:test-root',
-            leafIndex: 0,
-            verified: false
-        );
-
-        $this->assertFalse($unverified->verified);
     }
 
     public function testAuxDataFieldsAccessible(): void
@@ -69,7 +48,6 @@ class VerifiedAuxDataTest extends TestCase
             auxData: $auxData,
             merkleRoot: 'pkd-mr-v1:root',
             leafIndex: 3,
-            verified: true
         );
 
         $this->assertSame('my-type', $verified->auxData->type);

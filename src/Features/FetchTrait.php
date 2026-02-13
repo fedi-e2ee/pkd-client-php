@@ -143,6 +143,9 @@ trait FetchTrait
             if (is_null($fetched)) {
                 continue;
             }
+            if ($fetched->type !== $filter) {
+                continue;
+            }
             if ($typeValidator->isValid($fetched->data)) {
                 $data[] = $fetched;
             }

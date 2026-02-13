@@ -407,7 +407,7 @@ trait VerifyTrait
         };
 
         if (strlen($decoded) < $expectedLen) {
-            throw new ClientException("Invalid Merkle root format: expected a minimum of {$expectedByteLen} bytes for {$hashFunction} - Got {$decoded}");
+            throw new ClientException("decodeMerkleRoot: expected a minimum of {$expectedByteLen} bytes for {$hashFunction} - Got {$decoded}");
         }
 
         return $decoded;

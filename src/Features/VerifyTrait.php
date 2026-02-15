@@ -406,7 +406,7 @@ trait VerifyTrait
             default => 32,  // Fallback to 32 bytes as a minimum but $hashFunc should never be null.
         };
 
-        if (strlen($decoded) < $expectedLen) {
+        if (strlen($decoded) < $expectedByteLen) {
             throw new ClientException("decodeMerkleRoot: Invalid Merkle root format. Expected a minimum of {$expectedByteLen} bytes for {$hashFunction} - Got {$decoded}");
         }
 

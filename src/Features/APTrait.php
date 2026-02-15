@@ -5,6 +5,7 @@ namespace FediE2EE\PKD\Features;
 use FediE2EE\PKD\Crypto\ActivityPub\WebFinger;
 use FediE2EE\PKD\Crypto\HttpSignature;
 use FediE2EE\PKD\Crypto\Exceptions\{
+    CryptoException,
     HttpSignatureException,
     JsonException,
     NetworkException,
@@ -13,6 +14,7 @@ use FediE2EE\PKD\Crypto\Exceptions\{
 use FediE2EE\PKD\Exceptions\ClientException;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\GuzzleException;
+use ParagonIE\Certainty\Exception\CertaintyException;
 use ParagonIE\Certainty\RemoteFetch;
 use Psr\Http\Message\ResponseInterface;
 use SodiumException;
@@ -23,9 +25,12 @@ trait APTrait
     public ?HttpClient $httpClient = null;
 
     /**
+     * @throws CertaintyException
+     * @throws CryptoException
+     * @throws GuzzleException
      * @throws JsonException
      * @throws NetworkException
-     * @throws GuzzleException
+     * @throws SodiumException
      */
     public function canonicalize(string $actorName): string
     {
@@ -34,10 +39,13 @@ trait APTrait
     }
 
     /**
+     * @throws CertaintyException
      * @throws ClientException
+     * @throws CryptoException
      * @throws GuzzleException
      * @throws JsonException
      * @throws NetworkException
+     * @throws SodiumException
      */
     public function getInboxUrl(string $actorName): string
     {
@@ -58,12 +66,18 @@ trait APTrait
         return $parsed['inbox'];
     }
 
+    /**
+     * @throws CertaintyException
+     * @throws SodiumException
+     */
     public function ensureHttpClientConfigured(): void
     {
         if (is_null($this->httpClient)) {
             // Default HTTP client configuration.
             // This uses paragonie/certainty to ensure CACert bundles are up to date.
             $this->httpClient = new HttpClient([
+                'timeout' => 30.0,
+                'connect_timeout' => 10.0,
                 'verify' => (new RemoteFetch(
                     dirname(__DIR__, 2) . '/.data'
                 ))

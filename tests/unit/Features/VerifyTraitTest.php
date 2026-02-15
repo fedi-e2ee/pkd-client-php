@@ -672,10 +672,19 @@ class VerifyTraitTest extends TestCase
         $serverPk = $this->serverKey->getPublicKey();
 
         // Register test extension
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -705,7 +714,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'test-payload',
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -735,10 +744,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -789,10 +807,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -824,7 +851,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'test-payload',
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -852,10 +879,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'wanted-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'wanted-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -888,7 +924,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'wanted-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                         $wantedProof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($wantedLeaf),
@@ -900,7 +936,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'other-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                         $otherProof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($otherLeaf),
@@ -931,10 +967,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -965,7 +1010,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'payload-' . ($i + 1),
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1033,7 +1078,7 @@ class VerifyTraitTest extends TestCase
                         'key-id' => 'key-001',
                         'trusted' => true,
                         'inclusion-proof' => array_map(
-                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                            fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                             $proof1->proof
                         ),
                         'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf1),
@@ -1044,7 +1089,7 @@ class VerifyTraitTest extends TestCase
                         'key-id' => 'key-002',
                         'trusted' => false,
                         'inclusion-proof' => array_map(
-                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                            fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                             $proof2->proof
                         ),
                         'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf2),
@@ -1130,7 +1175,7 @@ class VerifyTraitTest extends TestCase
                 'public-keys' => [[
                     'public-key' => $key->toString(),
                     'inclusion-proof' => array_map(
-                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                        fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1263,7 +1308,7 @@ class VerifyTraitTest extends TestCase
                 'public-keys' => [[
                     'public-key' => $key->toString(),
                     'inclusion-proof' => array_map(
-                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                        fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1293,10 +1338,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -1339,10 +1393,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -1386,10 +1449,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);
@@ -1420,7 +1492,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'test-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -1486,10 +1558,19 @@ class VerifyTraitTest extends TestCase
     {
         $serverPk = $this->serverKey->getPublicKey();
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $registry = new Registry();
         $registry->addAuxDataType($testExtension);

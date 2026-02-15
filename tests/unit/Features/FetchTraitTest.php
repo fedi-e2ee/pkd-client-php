@@ -240,10 +240,19 @@ class FetchTraitTest extends TestCase
         $history = [];
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -293,10 +302,19 @@ class FetchTraitTest extends TestCase
     {
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -396,10 +414,19 @@ class FetchTraitTest extends TestCase
     {
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -430,10 +457,19 @@ class FetchTraitTest extends TestCase
     {
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -533,10 +569,19 @@ class FetchTraitTest extends TestCase
     {
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -573,10 +618,19 @@ class FetchTraitTest extends TestCase
         $actorUrl = 'https://example.com/users/bob';
 
         // Register an extension for 'wanted-type'
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'wanted-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'wanted-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -706,10 +760,19 @@ class FetchTraitTest extends TestCase
     {
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 
@@ -742,10 +805,19 @@ class FetchTraitTest extends TestCase
     {
         $actorUrl = 'https://example.com/users/bob';
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
         $this->registry->addAuxDataType($testExtension);
 

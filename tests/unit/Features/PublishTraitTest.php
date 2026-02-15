@@ -224,7 +224,7 @@ class PublishTraitTest extends TestCase
     public function testAssertSecretKeySetThrowsWhenNotSet(): void
     {
         // Create a test object with sk set to a non-SecretKey value
-        $testObj = new class {
+        $testObj = new class() {
             use PublishTrait;
             public ?PublicKey $pk = null;
             /** @var mixed Intentionally not a SecretKey to test the validation */

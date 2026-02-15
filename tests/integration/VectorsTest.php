@@ -26,13 +26,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SodiumException;
-use function array_map,
-    count,
-    file_exists,
-    file_get_contents,
-    json_decode,
-    strlen,
-    substr;
+use function array_map, count, file_exists, file_get_contents, json_decode, strlen, substr;
 
 /**
  * Test vector-based tests for PKD client.
@@ -70,7 +64,10 @@ class VectorsTest extends TestCase
             throw new RuntimeException('Failed to read test vectors');
         }
         self::$vectors = json_decode(
-            $raw, true, 512, JSON_THROW_ON_ERROR
+            $raw,
+            true,
+            512,
+            JSON_THROW_ON_ERROR
         );
         return self::$vectors;
     }
@@ -78,7 +75,7 @@ class VectorsTest extends TestCase
     private static function decodeLeaves(array $encoded): array
     {
         return array_map(
-            fn(string $l) => Base64UrlSafe::decodeNoPadding($l),
+            fn (string $l) => Base64UrlSafe::decodeNoPadding($l),
             $encoded
         );
     }
@@ -237,7 +234,11 @@ class VectorsTest extends TestCase
 
             $this->assertTrue(
                 $client->verifyInclusionProof(
-                    'sha256', $root, $leaf, $proof, $treeSize
+                    'sha256',
+                    $root,
+                    $leaf,
+                    $proof,
+                    $treeSize
                 ),
                 "Inclusion proof failed for leaf {$idx}"
                 . " in {$tc['name']}"
@@ -298,7 +299,8 @@ class VectorsTest extends TestCase
         );
         $allKeys = $identityKeys;
         $allKeys['__server__'] = new PublicKey(
-            $serverPkBytes, 'ed25519'
+            $serverPkBytes,
+            'ed25519'
         );
 
         $verified = false;
@@ -401,7 +403,8 @@ class VectorsTest extends TestCase
 
         // BurnDown is sent unencrypted
         $action = json_decode(
-            $step['signed-message'], true
+            $step['signed-message'],
+            true
         )['action'];
         if ($action === 'BurnDown') {
             $this->markTestSkipped(
@@ -422,19 +425,26 @@ class VectorsTest extends TestCase
             . ' HKDF-SHA256, ChaCha20Poly1305'
         );
         $hpke = new HPKE(
-            $factory->kem, $factory->kdf, $factory->aead
+            $factory->kem,
+            $factory->kdf,
+            $factory->aead
         );
 
         $curve = Curve::X25519;
         $decapsKey = new DecapsKey(
-            $curve, $hpkeDecapsKeyBytes
+            $curve,
+            $hpkeDecapsKeyBytes
         );
         $encapsKey = new EncapsKey(
-            $curve, $hpkeEncapsKeyBytes
+            $curve,
+            $hpkeEncapsKeyBytes
         );
 
         $decryptedBundle = $parser->hpkeDecrypt(
-            $hpkeWrapped, $decapsKey, $encapsKey, $hpke
+            $hpkeWrapped,
+            $decapsKey,
+            $encapsKey,
+            $hpke
         );
 
         $signedBundle = Bundle::fromJson($step['signed-message']);

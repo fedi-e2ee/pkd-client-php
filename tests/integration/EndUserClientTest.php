@@ -136,10 +136,19 @@ class EndUserClientTest extends TestCase
             'test-data-value'
         );
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid test data'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid test data';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
 
         $registry = new Registry();
@@ -176,10 +185,19 @@ class EndUserClientTest extends TestCase
             [['aux-id' => 'aux-001', 'aux-type' => 'other-type']]
         );
 
-        $testExtension = new class implements ExtensionInterface {
-            public function getAuxDataType(): string { return 'test-type'; }
-            public function getRejectionReason(): string { return 'Invalid test data'; }
-            public function isValid(string $auxData): bool { return true; }
+        $testExtension = new class() implements ExtensionInterface {
+            public function getAuxDataType(): string
+            {
+                return 'test-type';
+            }
+            public function getRejectionReason(): string
+            {
+                return 'Invalid test data';
+            }
+            public function isValid(string $auxData): bool
+            {
+                return true;
+            }
         };
 
         $registry = new Registry();

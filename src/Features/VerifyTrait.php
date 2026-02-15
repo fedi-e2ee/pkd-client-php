@@ -25,7 +25,7 @@ trait VerifyTrait
 
     /**
      * Override me to change the list of supported hash functions.
-     * 
+     *
      * @return string[]
      */
     public function getSupportedHashFunctions(): array
@@ -100,7 +100,9 @@ trait VerifyTrait
             if (($fn & 1) === 1 || $fn === $sn) {
                 // Node is right child or only child at this level
                 $node = $this->hashWithDomainSeparator(
-                    $hashFunction, "\x01", $sibling . $node
+                    $hashFunction,
+                    "\x01",
+                    $sibling . $node
                 );
                 while ((($fn & 1) === 0) && $fn !== 0) {
                     $fn >>= 1;
@@ -109,7 +111,9 @@ trait VerifyTrait
             } else {
                 // Node is left child
                 $node = $this->hashWithDomainSeparator(
-                    $hashFunction, "\x01", $node . $sibling
+                    $hashFunction,
+                    "\x01",
+                    $node . $sibling
                 );
             }
 

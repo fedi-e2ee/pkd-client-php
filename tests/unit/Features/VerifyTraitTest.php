@@ -1671,4 +1671,24 @@ class VerifyTraitTest extends TestCase
         );
         $this->assertTrue($result, 'Inclusion proof verification failed');
     }
+
+    public static function merkleRootProvider(): array
+    {
+        return [
+            ['blake2b', 32],
+            ['sha256', 32],
+            ['sha384', 48],
+            ['sha512', 64],
+        ];
+    }
+
+    #[DataProvider("merkleRootProvider")]
+    public function testDecodeMerkleRoot(string $hashFunc, int $zeroes): void
+    {
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+        $encoded = (new Tree([], $hashFunc))->getEncodedRoot();
+        $out = $client->decodeMerkleRoot($encoded, $hashFunc);
+        $this->assertSame($zeroes, strlen($out));
+    }
 }

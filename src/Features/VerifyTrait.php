@@ -392,7 +392,7 @@ trait VerifyTrait
      * @throws ClientException If the format is invalid
      * Supported $hashFunction 'sha256', 'sha384', 'sha512', 'blake2b'
      */
-    protected function decodeMerkleRoot(string $merkleRoot, string $hashFunction): string
+    public function decodeMerkleRoot(string $merkleRoot, string $hashFunction): string
     {
         $prefix = 'pkd-mr-v1:';
         if (!str_starts_with($merkleRoot, $prefix)) {

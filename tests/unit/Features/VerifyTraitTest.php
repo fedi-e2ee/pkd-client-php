@@ -21,6 +21,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use ParagonIE\ConstantTime\Base64UrlSafe;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Random\RandomException;
@@ -677,10 +678,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -714,7 +717,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'test-payload',
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -749,10 +752,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -812,10 +817,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -851,7 +858,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'test-payload',
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -884,10 +891,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'wanted-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -924,7 +933,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'wanted-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
                         $wantedProof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($wantedLeaf),
@@ -936,7 +945,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'other-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
                         $otherProof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($otherLeaf),
@@ -972,10 +981,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -1010,7 +1021,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'payload-' . ($i + 1),
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1078,7 +1089,7 @@ class VerifyTraitTest extends TestCase
                         'key-id' => 'key-001',
                         'trusted' => true,
                         'inclusion-proof' => array_map(
-                            fn ($n) => Base64UrlSafe::encodeUnpadded($n),
+                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
                             $proof1->proof
                         ),
                         'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf1),
@@ -1089,7 +1100,7 @@ class VerifyTraitTest extends TestCase
                         'key-id' => 'key-002',
                         'trusted' => false,
                         'inclusion-proof' => array_map(
-                            fn ($n) => Base64UrlSafe::encodeUnpadded($n),
+                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
                             $proof2->proof
                         ),
                         'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf2),
@@ -1175,14 +1186,14 @@ class VerifyTraitTest extends TestCase
                 'public-keys' => [[
                     'public-key' => $key->toString(),
                     'inclusion-proof' => array_map(
-                        fn ($n) => Base64UrlSafe::encodeUnpadded($n),
+                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
                     'leaf-index' => $proof->index,
                 ]],
                 'merkle-root' => $merkleRoot,
-                'tree-size' => (string) $tree->getSize(),
+                'tree-size' => (string)$tree->getSize(),
             ],
             'fedi-e2ee:v1/api/actor/get-keys'
         );
@@ -1292,8 +1303,8 @@ class VerifyTraitTest extends TestCase
 
         // Use a wrong Merkle root so proof verification fails
         $wrongRoot = 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(
-            random_bytes(32)
-        );
+                random_bytes(32)
+            );
 
         $webFingerResponse = TestHelper::createWebFingerResponse(
             'alice',
@@ -1308,7 +1319,7 @@ class VerifyTraitTest extends TestCase
                 'public-keys' => [[
                     'public-key' => $key->toString(),
                     'inclusion-proof' => array_map(
-                        fn ($n) => Base64UrlSafe::encodeUnpadded($n),
+                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1343,10 +1354,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -1398,10 +1411,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -1454,10 +1469,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -1492,14 +1509,14 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'test-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
                     'leaf-index' => $proof->index
                 ]],
                 'merkle-root' => $merkleRoot,
-                'tree-size' => (string) $tree->getSize()
+                'tree-size' => (string)$tree->getSize()
             ],
             'fedi-e2ee:v1/api/actor/aux-info'
         );
@@ -1563,10 +1580,12 @@ class VerifyTraitTest extends TestCase
             {
                 return 'test-type';
             }
+
             public function getRejectionReason(): string
             {
                 return 'Invalid';
             }
+
             public function isValid(string $auxData): bool
             {
                 return true;
@@ -1601,5 +1620,54 @@ class VerifyTraitTest extends TestCase
         $this->expectExceptionMessage('Invalid tree-size: must be positive');
 
         $client->fetchAuxData('alice@example.com', 'test-type');
+    }
+
+    public static function hashFunctionProvider(): array
+    {
+        return [
+            ['blake2b'],
+            ['sha256'],
+            ['sha384'],
+            ['sha512'],
+        ];
+    }
+
+    /**
+     * @throws ClientException
+     * @throws CryptoException
+     * @throws NotImplementedException
+     * @throws SodiumException
+     */
+    #[DataProvider("hashFunctionProvider")]
+    public function testHardCodedHashLengths(string $hashFunc): void
+    {
+        if ($hashFunc === 'blake2b') {
+            $expectedHashLength = 32;
+        } else {
+            $expectedHashLength = strlen(hash($hashFunc, '', true));
+        }
+        // strlen("pkd-mr-v1:") == 10
+        $expectedEncodedLength = 10 + (int) ceil($expectedHashLength * 4/3);
+        $serverPk = $this->serverKey->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+
+        // Build a simple tree with known leaves
+        $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
+        $tree = new Tree($leaves, $hashFunc);
+        $rawRoot = $tree->getRoot();
+        $this->assertSame($expectedHashLength, strlen($rawRoot));
+        $merkleRoot = $tree->getEncodedRoot();
+        $this->assertSame($expectedEncodedLength, strlen($merkleRoot));
+
+        // We need to actually fail if the code is mutated:
+        $proof = $tree->getInclusionProof('leaf1');
+        $result = $client->verifyInclusionProof(
+            $hashFunc,
+            $merkleRoot,
+            'leaf1',
+            $proof,
+            $tree->getSize()
+        );
+        $this->assertTrue($result, 'Inclusion proof verification failed');
     }
 }

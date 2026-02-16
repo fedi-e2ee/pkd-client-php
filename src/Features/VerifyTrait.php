@@ -403,11 +403,10 @@ trait VerifyTrait
         $decoded = Base64UrlSafe::decodeNoPadding($encoded);
 
         $expectedByteLen = match ($hashFunction) {
-            'sha256' => 32,
+            'blake2b', 'sha256' => 32,
             'sha384' => 48,
             'sha512' => 64,
-            'blake2b' => 32,  // variable-length 8 to 512 bits (1 to 64 bytes) but 32 minimum for safety.
-            default => 32,  // Fallback to 32 bytes as a minimum but $hashFunc should never be null.
+            default => throw new ClientException("Hash function not in allow list"),
         };
 
         if (strlen($decoded) < $expectedByteLen) {

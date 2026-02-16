@@ -7,12 +7,13 @@ use FediE2EE\PKD\Exceptions\ClientException;
 use FediE2EE\PKD\Extensions\ExtensionException;
 use FediE2EE\PKD\Values\AuxData;
 use FediE2EE\PKD\Crypto\Exceptions\{
+    CryptoException,
     HttpSignatureException,
     JsonException,
     NetworkException,
-    NotImplementedException
-};
+    NotImplementedException};
 use GuzzleHttp\Exception\GuzzleException;
+use ParagonIE\Certainty\Exception\CertaintyException;
 use SodiumException;
 use function is_array, is_null, is_string, urlencode;
 
@@ -32,7 +33,9 @@ trait FetchTrait
      *
      * @return PublicKey[]
      *
+     * @throws CertaintyException
      * @throws ClientException
+     * @throws CryptoException
      * @throws GuzzleException
      * @throws HttpSignatureException
      * @throws JsonException

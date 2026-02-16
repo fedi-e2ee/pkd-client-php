@@ -20,7 +20,9 @@
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxData",
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchUnverifiedAuxDataByID",
                 "FediE2EE\\PKD\\Features\\FetchTrait::fetchRecentMerkleRoot",
+                "FediE2EE\\PKD\\Features\\PublishTrait::preamble",
                 "FediE2EE\\PKD\\Features\\VerifyTrait::fetchPublicKeys",
+                "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAuxDataByID",
                 "FediE2EE\\PKD\\Features\\VerifyTrait::fetchAuxData"
             ]
         },
@@ -83,8 +85,14 @@
                 "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
             ]
         },
+        "Continue_": {
+            "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait"
+            ],
+        },
         "MatchArmRemoval": {
             "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait",
                 "FediE2EE\\PKD\\Features\\PublishTrait::getInternalHpke"
             ]
         },

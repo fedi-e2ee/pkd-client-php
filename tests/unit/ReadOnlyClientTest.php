@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace FediE2EE\PKD\Tests;
 
+use FediE2EE\PKD\Crypto\Merkle\Tree;
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\ReadOnlyClient;
@@ -9,6 +10,7 @@ use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
@@ -93,5 +95,26 @@ class ReadOnlyClientTest extends TestCase
         $this->assertFalse(method_exists($client, 'revokeKey'));
         $this->assertFalse(method_exists($client, 'burnDown'));
         $this->assertFalse(method_exists($client, 'fireproof'));
+    }
+
+    public static function merkleRootProvider(): array
+    {
+        return [
+            ['blake2b', 32],
+            ['sha256', 32],
+            ['sha384', 48],
+            ['sha512', 64],
+        ];
+    }
+
+    #[DataProvider("merkleRootProvider")]
+    public function testDecodeMerkleRoot(string $hashFunc, int $zeroes): void
+    {
+        $sk = SecretKey::generate();
+        $serverPk = $sk->getPublicKey();
+        $client = new ReadOnlyClient('http://pkd.test', $serverPk);
+        $encoded = (new Tree([], $hashFunc))->getEncodedRoot();
+        $out = $client->decodeMerkleRoot($encoded, $hashFunc);
+        $this->assertSame($zeroes, strlen($out));
     }
 }

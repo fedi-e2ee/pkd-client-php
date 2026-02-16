@@ -72,11 +72,13 @@
         },
         "IncrementInteger": {
             "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait",
                 "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured"
             ]
         },
         "DecrementInteger": {
             "ignore": [
+                "FediE2EE\\PKD\\Features\\VerifyTrait",
                 "FediE2EE\\PKD\\Features\\APTrait::ensureHttpClientConfigured",
                 "FediE2EE\\PKD\\Features\\VerifyTrait::verifyInclusionProofInternal"
             ]

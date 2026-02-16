@@ -717,7 +717,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'test-payload',
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -858,7 +858,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'test-payload',
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -933,7 +933,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'wanted-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                         $wantedProof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($wantedLeaf),
@@ -945,7 +945,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'other-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                         $otherProof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($otherLeaf),
@@ -1021,7 +1021,7 @@ class VerifyTraitTest extends TestCase
                 'aux-data' => 'payload-' . ($i + 1),
                 'actor-id' => $actorUrl,
                 'inclusion-proof' => array_map(
-                    fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                    fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                     $proof->proof
                 ),
                 'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1089,7 +1089,7 @@ class VerifyTraitTest extends TestCase
                         'key-id' => 'key-001',
                         'trusted' => true,
                         'inclusion-proof' => array_map(
-                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                            fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                             $proof1->proof
                         ),
                         'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf1),
@@ -1100,7 +1100,7 @@ class VerifyTraitTest extends TestCase
                         'key-id' => 'key-002',
                         'trusted' => false,
                         'inclusion-proof' => array_map(
-                            fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                            fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                             $proof2->proof
                         ),
                         'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf2),
@@ -1186,7 +1186,7 @@ class VerifyTraitTest extends TestCase
                 'public-keys' => [[
                     'public-key' => $key->toString(),
                     'inclusion-proof' => array_map(
-                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                        fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1303,8 +1303,8 @@ class VerifyTraitTest extends TestCase
 
         // Use a wrong Merkle root so proof verification fails
         $wrongRoot = 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(
-                random_bytes(32)
-            );
+            random_bytes(32)
+        );
 
         $webFingerResponse = TestHelper::createWebFingerResponse(
             'alice',
@@ -1319,7 +1319,7 @@ class VerifyTraitTest extends TestCase
                 'public-keys' => [[
                     'public-key' => $key->toString(),
                     'inclusion-proof' => array_map(
-                        fn($n) => Base64UrlSafe::encodeUnpadded($n),
+                        fn ($n) => Base64UrlSafe::encodeUnpadded($n),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($leaf),
@@ -1509,7 +1509,7 @@ class VerifyTraitTest extends TestCase
                     'aux-data' => 'test-payload',
                     'actor-id' => $actorUrl,
                     'inclusion-proof' => array_map(
-                        fn($node) => Base64UrlSafe::encodeUnpadded($node),
+                        fn ($node) => Base64UrlSafe::encodeUnpadded($node),
                         $proof->proof
                     ),
                     'merkle-leaf' => Base64UrlSafe::encodeUnpadded($auxLeaf),
@@ -1647,7 +1647,7 @@ class VerifyTraitTest extends TestCase
             $expectedHashLength = strlen(hash($hashFunc, '', true));
         }
         // strlen("pkd-mr-v1:") == 10
-        $expectedEncodedLength = 10 + (int) ceil($expectedHashLength * 4/3);
+        $expectedEncodedLength = 10 + (int) ceil($expectedHashLength * 4 / 3);
         $serverPk = $this->serverKey->getPublicKey();
         $client = new ReadOnlyClient('http://pkd.test', $serverPk);
 
@@ -1655,6 +1655,7 @@ class VerifyTraitTest extends TestCase
         $leaves = ['leaf1', 'leaf2', 'leaf3', 'leaf4'];
         $tree = new Tree($leaves, $hashFunc);
         $rawRoot = $tree->getRoot();
+        $this->assertNotNull($rawRoot);
         $this->assertSame($expectedHashLength, strlen($rawRoot));
         $merkleRoot = $tree->getEncodedRoot();
         $this->assertSame($expectedEncodedLength, strlen($merkleRoot));

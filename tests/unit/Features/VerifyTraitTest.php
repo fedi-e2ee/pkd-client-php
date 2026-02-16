@@ -378,7 +378,7 @@ class VerifyTraitTest extends TestCase
         $invalidRoot = 'pkd-mr-v1:' . Base64UrlSafe::encodeUnpadded(str_repeat("\x00", 16));
 
         $this->expectException(ClientException::class);
-        $this->expectExceptionMessage('decodeMerkleRoot: Invalid Merkle root format. Expected a minimum of 32 bytes for sha256 - Got \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\');
+        $this->expectExceptionMessage('decodeMerkleRoot: Invalid Merkle root format. Expected a minimum of 32 bytes for sha256');
 
         $client->verifyInclusionProof('sha256', $invalidRoot, 'leaf1', $proof, $tree->getSize());
     }

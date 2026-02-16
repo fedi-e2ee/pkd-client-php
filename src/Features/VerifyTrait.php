@@ -398,7 +398,7 @@ trait VerifyTrait
         $encoded = substr($merkleRoot, strlen($prefix));
         $decoded = Base64UrlSafe::decodeNoPadding($encoded);
 
-        $expectedByteLen = match ($hashFunction) {  
+        $expectedByteLen = match ($hashFunction) {
             'sha256' => 32,
             'sha384' => 48,
             'sha512' => 64,

@@ -43,7 +43,7 @@ jobs:
         run: composer update
 
       - name: Mutation Tests
-        run: vendor/bin/infection --timeout=60 --only-covering-test-cases
+        run: vendor/bin/infection --only-covering-test-cases
 
       - name: Print the mutation.log file for easy copy/paste from GitHub Actions
         run: cat infection.log

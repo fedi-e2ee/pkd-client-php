@@ -5,6 +5,7 @@
         ]
     },
     "threads": "max",
+    "timeout": 60,
     "minCoveredMsi": 90,
     "phpUnit": {
         "configDir": "."

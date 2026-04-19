@@ -15,6 +15,7 @@ use FediE2EE\PKD\Exceptions\ClientException;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\GuzzleException;
 use ParagonIE\Certainty\Exception\CertaintyException;
+use ParagonIE\Certainty\Fetch;
 use ParagonIE\Certainty\RemoteFetch;
 use Psr\Http\Message\ResponseInterface;
 use SodiumException;

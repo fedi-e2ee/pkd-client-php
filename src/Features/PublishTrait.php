@@ -106,7 +106,11 @@ trait PublishTrait
             ],
             $body
         );
-        $signed = (new HttpSignature())->sign($httpSignatureSecretKey, $request);
+        $signed = (new HttpSignature())->sign(
+            $httpSignatureSecretKey,
+            $request,
+            ['@method', '@path', 'content-type']
+        );
         if (!($signed instanceof RequestInterface)) {
             throw new ClientException('An unexpected error has occurred with PKDCrypto.');
         }
@@ -139,9 +143,6 @@ trait PublishTrait
     {
         if (is_null($this->httpClient)) {
             throw new ClientException('The http client is not injected');
-        }
-        if (!property_exists($this, 'url')) {
-            throw new ClientException('Property "url" not defined');
         }
         // ActivityPub Actor for PKD Server:
         if (is_null($this->serverActorInbox)) {
@@ -210,11 +211,6 @@ trait PublishTrait
     protected function getRecentMerkleRoot(): string
     {
         if (is_null($this->recentMerkleRoot)) {
-            if (!method_exists($this, 'fetchRecentMerkleRoot')) {
-                throw new ClientException(
-                    'Method "fetchRecentMerkleRoot" does not exist on ' . get_class($this)
-                );
-            }
             $this->recentMerkleRoot = $this->fetchRecentMerkleRoot();
         }
         return $this->recentMerkleRoot;

@@ -22,7 +22,7 @@
   "require": {
     "ext-curl": "*",
     "php": "^8.2",
-    "fedi-e2ee/pkd-crypto": "^0.40|^1",
+    "fedi-e2ee/pkd-crypto": "^0.43|^1",
     "fedi-e2ee/pkd-extensions": "^0|^1",
     "guzzlehttp/guzzle": "^7",
     "paragonie/sodium_compat": "^1|^2"

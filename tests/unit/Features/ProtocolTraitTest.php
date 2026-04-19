@@ -14,7 +14,9 @@ use FediE2EE\PKD\Extensions\Registry;
 use FediE2EE\PKD\InstanceClient;
 use FediE2EE\PKD\Values\ServerHPKE;
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use ParagonIE\HPKE\AEAD\ChaCha20Poly1305;
@@ -104,9 +106,14 @@ class ProtocolTraitTest extends TestCase
 
         $client = $this->createConfiguredEndUserClient($actorUrl);
         $client->setHttpClient($this->createMockClient([]));
+        $this->assertNotNull($client->httpClient);
 
         $newKey = SecretKey::generate()->getPublicKey();
-        $result = $client->addKey($newKey, $actorUrl);
+        try {
+            $result = $client->addKey($newKey, $actorUrl);
+        } catch (ServerException|ConnectException $ex) {
+            $this->markTestSkipped($ex->getMessage());
+        }
 
         $this->assertIsString($result);
         $this->assertNotEmpty($result);

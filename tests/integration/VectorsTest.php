@@ -6,20 +6,23 @@ use FediE2EE\PKD\Crypto\Exceptions\BundleException;
 use FediE2EE\PKD\Crypto\Exceptions\CryptoException;
 use FediE2EE\PKD\Crypto\Exceptions\InputException;
 use FediE2EE\PKD\Crypto\Exceptions\NotImplementedException;
+use FediE2EE\PKD\Crypto\Enums\ProtocolVersion;
 use FediE2EE\PKD\Crypto\Merkle\Tree;
 use FediE2EE\PKD\Crypto\Protocol\Bundle;
+use FediE2EE\PKD\Crypto\Protocol\EncryptedActions\EncryptedBurnDown;
 use FediE2EE\PKD\Crypto\Protocol\Parser;
+use FediE2EE\PKD\Crypto\Protocol\SignedMessage;
 use FediE2EE\PKD\Crypto\PublicKey;
 use FediE2EE\PKD\Crypto\SecretKey;
 use FediE2EE\PKD\Exceptions\ClientException;
 use FediE2EE\PKD\ReadOnlyClient;
 use JsonException;
 use ParagonIE\ConstantTime\Base64UrlSafe;
-use ParagonIE\HPKE\HPKE;
+use ParagonIE\HPKE\Factory;
 use ParagonIE\HPKE\HPKEException;
-use ParagonIE\HPKE\KEM\DHKEM\Curve;
-use ParagonIE\HPKE\KEM\DHKEM\DecapsKey;
-use ParagonIE\HPKE\KEM\DHKEM\EncapsKey;
+use ParagonIE\HPKE\KEM\PQKEM\Algorithm;
+use ParagonIE\HPKE\KEM\PQKEM\DecapsKey;
+use ParagonIE\HPKE\KEM\PQKEM\EncapsKey;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -89,9 +92,9 @@ class VectorsTest extends TestCase
         $keys = [];
         foreach ($tc['identities'] as $actorUrl => $material) {
             $pkBytes = Base64UrlSafe::decodeNoPadding(
-                $material['ed25519']['public-key']
+                $material['mldsa44']['public-key']
             );
-            $keys[$actorUrl] = new PublicKey($pkBytes, 'ed25519');
+            $keys[$actorUrl] = new PublicKey($pkBytes, 'mldsa44');
         }
         return $keys;
     }
@@ -291,7 +294,17 @@ class VectorsTest extends TestCase
         array $step,
     ): void {
         $bundle = Bundle::fromJson($step['signed-message']);
-        $signedMsg = $bundle->toSignedMessage();
+        if ($bundle->getAction() === 'BurnDown') {
+            $raw = json_decode($step['signed-message'], true, 512, JSON_THROW_ON_ERROR);
+            $signedMsg = new SignedMessage(
+                new EncryptedBurnDown($raw['message']),
+                $raw['recent-merkle-root'],
+                Base64UrlSafe::decodeNoPadding($raw['signature']),
+                ProtocolVersion::default(),
+            );
+        } else {
+            $signedMsg = $bundle->toSignedMessage();
+        }
         $identityKeys = self::identityPublicKeys($tc);
 
         $serverPkBytes = Base64UrlSafe::decodeNoPadding(
@@ -300,7 +313,7 @@ class VectorsTest extends TestCase
         $allKeys = $identityKeys;
         $allKeys['__server__'] = new PublicKey(
             $serverPkBytes,
-            'ed25519'
+            'mldsa44'
         );
 
         $verified = false;
@@ -420,23 +433,15 @@ class VectorsTest extends TestCase
             $tc['server-keys']['hpke-encaps-key']
         );
 
-        $factory = \ParagonIE\HPKE\Factory::init(
-            'DHKEM(X25519, HKDF-SHA256),'
-            . ' HKDF-SHA256, ChaCha20Poly1305'
-        );
-        $hpke = new HPKE(
-            $factory->kem,
-            $factory->kdf,
-            $factory->aead
-        );
+        $hpke = Factory::init('X-Wing, HKDF-SHA256, ChaCha20Poly1305');
 
-        $curve = Curve::X25519;
+        $algorithm = Algorithm::XWing;
         $decapsKey = new DecapsKey(
-            $curve,
+            $algorithm,
             $hpkeDecapsKeyBytes
         );
         $encapsKey = new EncapsKey(
-            $curve,
+            $algorithm,
             $hpkeEncapsKeyBytes
         );
 

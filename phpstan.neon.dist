@@ -13,20 +13,3 @@ parameters:
 		- message: '#Cannot call method get\(\) on GuzzleHttp\\Client\|null#'
 		  path: src/Features/PublishTrait.php
 		# Defensive runtime checks that are always true for actual implementations
-		- message: '#will always evaluate to (true|false)#'
-		  paths:
-		    - src/Features/PublishTrait.php
-		    - tests/
-		# Test files - relax type annotations and false returns
-		- message: '#has parameter .+ with no value type specified in iterable type#'
-		  path: tests/
-		- message: '#return type has no value type specified in iterable type#'
-		  path: tests/
-		- message: '#should return .+ but returns .+\|(false|null)#'
-		  path: tests/
-		- message: '#expects .+, .+\|false given#'
-		  path: tests/
-		- message: '#Cannot access offset .+ on mixed#'
-		  path: tests/
-		- message: '#does not accept mixed#'
-		  path: tests/

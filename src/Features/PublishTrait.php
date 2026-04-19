@@ -106,7 +106,11 @@ trait PublishTrait
             ],
             $body
         );
-        $signed = (new HttpSignature())->sign($httpSignatureSecretKey, $request);
+        $signed = (new HttpSignature())->sign(
+            $httpSignatureSecretKey,
+            $request,
+            ['@method', '@path', 'content-type']
+        );
         if (!($signed instanceof RequestInterface)) {
             throw new ClientException('An unexpected error has occurred with PKDCrypto.');
         }

@@ -19,6 +19,9 @@
             <directory>tests/integration</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <const name="IS_TESTING" value="true"/>
+    </php>
 
     <source restrictNotices="true" restrictWarnings="true">
         <include>

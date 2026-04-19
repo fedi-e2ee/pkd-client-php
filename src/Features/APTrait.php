@@ -81,7 +81,7 @@ trait APTrait
                 'verify' => (new RemoteFetch(
                     dirname(__DIR__, 2) . '/.data'
                 ))
-                    ->getLatestBundle()
+                    ->getLatestBundle(true, !defined('IS_TESTING'))
                     ->getFilePath()
             ]);
         }

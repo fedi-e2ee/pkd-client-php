@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@db91e1a0e48e84637d325a7ee4d2677e146ceec4  # v2.36.0
+        uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f  # v2.36.0
         with:
           php-version: ${{ matrix.php-versions }}
           coverage: pcov
@@ -43,7 +43,7 @@ jobs:
         run: composer update
 
       - name: Mutation Tests
-        run: vendor/bin/infection
+        run: vendor/bin/infection --timeout=60 --only-covering-test-cases
 
       - name: Print the mutation.log file for easy copy/paste from GitHub Actions
         run: cat infection.log
